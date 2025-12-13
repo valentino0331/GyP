@@ -8,10 +8,14 @@ const connectionString = process.env.DATABASE_URL;
 if (connectionString) {
   pool = new Pool({
     connectionString,
-    // En producción, podrías necesitar configuración SSL
-    // ssl: {
-    //   rejectUnauthorized: false,
-    // },
+    // Configuración SSL requerida para Neon en producción (Netlify/Render)
+    ssl: {
+      rejectUnauthorized: false,
+    },
+    // Configuración para serverless (Netlify Functions)
+    max: 1,
+    idleTimeoutMillis: 10000,
+    connectionTimeoutMillis: 10000,
   });
 
   console.log('Conexión a la base de datos configurada.');
