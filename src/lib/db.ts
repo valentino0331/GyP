@@ -1,29 +1,23 @@
-import { Pool } from 'pg';
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import ws from 'ws';
 
-// Next.js carga automáticamente las variables de .env.local
-let pool: Pool;
+// Configurar WebSocket para entornos serverless (Netlify)
+neonConfig.webSocketConstructor = ws;
 
 const connectionString = process.env.DATABASE_URL;
+
+let pool: Pool;
 
 if (connectionString) {
   pool = new Pool({
     connectionString,
-    // Configuración SSL requerida para Neon en producción (Netlify/Render)
-    ssl: {
-      rejectUnauthorized: false,
-    },
-    // Configuración para serverless (Netlify Functions)
-    max: 1,
-    idleTimeoutMillis: 10000,
-    connectionTimeoutMillis: 10000,
   });
-
   console.log('Conexión a la base de datos configurada.');
 } else {
   console.error("La variable de entorno DATABASE_URL no está definida.");
-  // Creamos un pool vacío para evitar que la aplicación crashee al importar,
-  // pero mostraremos un error claro.
-  pool = new Pool();
+  pool = new Pool({ connectionString: '' });
 }
 
-export const db = pool;
+export const db = {
+  query: (text: string, params?: any[]) => pool.query(text, params),
+};
