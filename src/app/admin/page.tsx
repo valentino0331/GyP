@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { FaUsers, FaPoll, FaChartBar, FaCog, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaEye, FaCheck, FaTimes, FaBars, FaSpinner, FaImage, FaUpload, FaCalendar, FaCopy, FaDownload, FaGlobe, FaBuilding, FaImages } from 'react-icons/fa';
+import { FaUsers, FaPoll, FaChartBar, FaCog, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaEye, FaCheck, FaTimes, FaBars, FaSpinner, FaImage, FaUpload, FaCalendar, FaCopy, FaDownload, FaGlobe, FaBuilding, FaImages, FaEnvelope, FaBriefcase, FaUserTie } from 'react-icons/fa';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
@@ -69,7 +69,38 @@ interface Client {
   is_visible: boolean;
 }
 
-type Tab = 'dashboard' | 'encuestas' | 'contenido' | 'galeria' | 'clientes' | 'usuarios' | 'reportes' | 'configuracion';
+interface Service {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  display_order: number;
+  is_visible: boolean;
+}
+
+interface TeamMember {
+  id: string;
+  name: string;
+  position: string;
+  bio: string;
+  photo_url: string;
+  display_order: number;
+  is_visible: boolean;
+}
+
+interface ContactMessage {
+  id: string;
+  nombre: string;
+  empresa: string;
+  email: string;
+  telefono: string;
+  asunto: string;
+  mensaje: string;
+  created_at: string;
+  is_read: boolean;
+}
+
+type Tab = 'dashboard' | 'encuestas' | 'contenido' | 'galeria' | 'clientes' | 'servicios' | 'equipo' | 'mensajes' | 'usuarios' | 'reportes' | 'configuracion';
 
 export default function AdminPage() {
   const { data: session, status } = useSession();
@@ -124,11 +155,13 @@ export default function AdminPage() {
   const allMenuItems = [
     { id: 'dashboard' as Tab, label: 'Dashboard', icon: FaChartBar, adminOnly: false },
     { id: 'encuestas' as Tab, label: 'Encuestas', icon: FaPoll, adminOnly: false },
-    { id: 'contenido' as Tab, label: 'Contenido', icon: FaGlobe, adminOnly: true },
+    { id: 'contenido' as Tab, label: 'Contenido Web', icon: FaGlobe, adminOnly: true },
+    { id: 'servicios' as Tab, label: 'Servicios', icon: FaCog, adminOnly: true },
     { id: 'galeria' as Tab, label: 'Galería', icon: FaImages, adminOnly: true },
     { id: 'clientes' as Tab, label: 'Clientes', icon: FaBuilding, adminOnly: true },
+    { id: 'equipo' as Tab, label: 'Equipo', icon: FaUsers, adminOnly: true },
+    { id: 'mensajes' as Tab, label: 'Mensajes', icon: FaEnvelope, adminOnly: true },
     { id: 'usuarios' as Tab, label: 'Usuarios', icon: FaUsers, adminOnly: true },
-    { id: 'reportes' as Tab, label: 'Reportes', icon: FaChartBar, adminOnly: true },
     { id: 'configuracion' as Tab, label: 'Configuración', icon: FaCog, adminOnly: true },
   ];
 
@@ -229,10 +262,12 @@ export default function AdminPage() {
           {activeTab === 'dashboard' && <DashboardContent key={refreshKey} />}
           {activeTab === 'encuestas' && <EncuestasContent key={refreshKey} onCrear={() => setModalCrear(true)} />}
           {activeTab === 'contenido' && isAdmin && <ContenidoContent />}
+          {activeTab === 'servicios' && isAdmin && <ServiciosContent />}
           {activeTab === 'galeria' && isAdmin && <GaleriaContent />}
           {activeTab === 'clientes' && isAdmin && <ClientesContent />}
+          {activeTab === 'equipo' && isAdmin && <EquipoContent />}
+          {activeTab === 'mensajes' && isAdmin && <MensajesContent />}
           {activeTab === 'usuarios' && isAdmin && <UsuariosContent />}
-          {activeTab === 'reportes' && isAdmin && <ReportesContent />}
           {activeTab === 'configuracion' && isAdmin && <ConfiguracionContent />}
         </main>
       </div>
@@ -2412,6 +2447,365 @@ function ModalClienteItem({ client, onClose, onSuccess }: {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ==========================================
+// COMPONENTE: GESTIÓN DE SERVICIOS
+// ==========================================
+function ServiciosContent() {
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  const fetchServices = async () => {
+    try {
+      const res = await fetch('/api/services');
+      if (!res.ok) throw new Error('Error');
+      const data = await res.json();
+      setServices(data);
+    } catch {
+      // Tabla no existe aún
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const iconOptions = [
+    { value: 'chart', label: '📊 Gráficos', icon: '📊' },
+    { value: 'users', label: '👥 Personas', icon: '👥' },
+    { value: 'search', label: '🔍 Búsqueda', icon: '🔍' },
+    { value: 'document', label: '📄 Documento', icon: '📄' },
+    { value: 'graph', label: '📈 Estadísticas', icon: '📈' },
+    { value: 'target', label: '🎯 Objetivo', icon: '🎯' },
+    { value: 'lightbulb', label: '💡 Idea', icon: '💡' },
+    { value: 'handshake', label: '🤝 Alianza', icon: '🤝' },
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <FaSpinner className="animate-spin text-4xl text-teal-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-gray-900">Gestión de Servicios</h2>
+          <p className="text-sm text-gray-500">Edita los servicios que ofrece tu empresa</p>
+        </div>
+        <button
+          onClick={() => { setEditingService(null); setShowModal(true); }}
+          className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2"
+        >
+          <FaPlus className="w-4 h-4" />
+          Nuevo Servicio
+        </button>
+      </div>
+
+      {services.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <FaBriefcase className="text-6xl text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-gray-700 mb-2">Sin servicios configurados</h3>
+          <p className="text-gray-500 mb-4">Los servicios se mostrarán en la página de Servicios</p>
+          <p className="text-sm text-yellow-600">💡 Ejecuta el schema_update.sql para crear la tabla de servicios</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {services.map((service) => (
+            <div key={service.id} className="bg-white rounded-lg shadow-sm p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{iconOptions.find(i => i.value === service.icon)?.icon || '📋'}</span>
+                  <div>
+                    <h3 className="font-bold text-gray-900">{service.title}</h3>
+                    <p className="text-sm text-gray-600 line-clamp-2">{service.description}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setEditingService(service); setShowModal(true); }}
+                    className="text-teal-600 hover:text-teal-800"
+                  >
+                    <FaEdit />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// COMPONENTE: GESTIÓN DE EQUIPO
+// ==========================================
+function EquipoContent() {
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const fetchMembers = async () => {
+    try {
+      const res = await fetch('/api/team');
+      if (!res.ok) throw new Error('Error');
+      const data = await res.json();
+      setMembers(data);
+    } catch {
+      // Tabla no existe aún
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <FaSpinner className="animate-spin text-4xl text-teal-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-gray-900">Gestión del Equipo</h2>
+          <p className="text-sm text-gray-500">Administra los miembros del equipo que se muestran en el sitio</p>
+        </div>
+        <button
+          onClick={() => { setEditingMember(null); setShowModal(true); }}
+          className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2"
+        >
+          <FaPlus className="w-4 h-4" />
+          Nuevo Miembro
+        </button>
+      </div>
+
+      {members.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <FaUserTie className="text-6xl text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-gray-700 mb-2">Sin miembros del equipo</h3>
+          <p className="text-gray-500 mb-4">Agrega los miembros de tu equipo para mostrarlos en la página</p>
+          <p className="text-sm text-yellow-600">💡 Ejecuta el schema_update.sql para crear la tabla de equipo</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {members.map((member) => (
+            <div key={member.id} className="bg-white rounded-lg shadow-sm p-6 text-center">
+              <div className="w-20 h-20 mx-auto mb-3 bg-gray-200 rounded-full overflow-hidden">
+                {member.photo_url ? (
+                  <img src={member.photo_url} alt={member.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    <FaUserTie className="text-3xl" />
+                  </div>
+                )}
+              </div>
+              <h3 className="font-bold text-gray-900">{member.name}</h3>
+              <p className="text-sm text-teal-600">{member.position}</p>
+              <div className="mt-3 flex justify-center gap-2">
+                <button
+                  onClick={() => { setEditingMember(member); setShowModal(true); }}
+                  className="text-teal-600 hover:text-teal-800"
+                >
+                  <FaEdit />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// COMPONENTE: MENSAJES DE CONTACTO
+// ==========================================
+function MensajesContent() {
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
+
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  const fetchMessages = async () => {
+    try {
+      const res = await fetch('/api/contact');
+      if (!res.ok) throw new Error('Error');
+      const data = await res.json();
+      setMessages(Array.isArray(data) ? data : []);
+    } catch {
+      setMessages([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    try {
+      await fetch(`/api/contact?id=${id}`, { method: 'PATCH' });
+      setMessages(messages.map(m => m.id === id ? { ...m, is_read: true } : m));
+    } catch {
+      // Error silencioso
+    }
+  };
+
+  const deleteMessage = async (id: string) => {
+    if (!confirm('¿Eliminar este mensaje?')) return;
+    try {
+      await fetch(`/api/contact?id=${id}`, { method: 'DELETE' });
+      setMessages(messages.filter(m => m.id !== id));
+      if (selectedMessage?.id === id) setSelectedMessage(null);
+    } catch {
+      // Error silencioso
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <FaSpinner className="animate-spin text-4xl text-teal-600" />
+      </div>
+    );
+  }
+
+  const unreadCount = messages.filter(m => !m.is_read).length;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold text-gray-900">Mensajes de Contacto</h2>
+        <p className="text-sm text-gray-500">
+          {messages.length} mensajes • {unreadCount} sin leer
+        </p>
+      </div>
+
+      {messages.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <FaEnvelope className="text-6xl text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-gray-700 mb-2">Sin mensajes</h3>
+          <p className="text-gray-500">Los mensajes del formulario de contacto aparecerán aquí</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* Lista de mensajes */}
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  onClick={() => { setSelectedMessage(message); markAsRead(message.id); }}
+                  className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
+                    selectedMessage?.id === message.id ? 'bg-teal-50 border-l-4 border-teal-500' : ''
+                  } ${!message.is_read ? 'bg-blue-50' : ''}`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        {!message.is_read && <span className="w-2 h-2 bg-blue-500 rounded-full"></span>}
+                        <h4 className="font-bold text-gray-900">{message.nombre}</h4>
+                      </div>
+                      <p className="text-sm text-gray-600">{message.empresa}</p>
+                      <p className="text-sm text-teal-600 font-medium mt-1">{message.asunto}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">
+                        {new Date(message.created_at).toLocaleDateString('es-PE')}
+                      </p>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteMessage(message.id); }}
+                        className="text-red-400 hover:text-red-600 mt-1"
+                      >
+                        <FaTrash className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Detalle del mensaje */}
+          {selectedMessage ? (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="border-b border-gray-200 pb-4 mb-4">
+                <h3 className="text-xl font-bold text-gray-900">{selectedMessage.asunto}</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {new Date(selectedMessage.created_at).toLocaleString('es-PE')}
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-gray-500">Nombre</label>
+                    <p className="text-gray-900">{selectedMessage.nombre}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500">Empresa</label>
+                    <p className="text-gray-900">{selectedMessage.empresa}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500">Email</label>
+                    <p className="text-teal-600">{selectedMessage.email}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500">Teléfono</label>
+                    <p className="text-gray-900">{selectedMessage.telefono}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Mensaje</label>
+                  <p className="text-gray-900 mt-1 whitespace-pre-wrap bg-gray-50 rounded-lg p-4">
+                    {selectedMessage.mensaje}
+                  </p>
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <a
+                    href={`mailto:${selectedMessage.email}?subject=Re: ${selectedMessage.asunto}`}
+                    className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded text-center"
+                  >
+                    📧 Responder por Email
+                  </a>
+                  <a
+                    href={`tel:${selectedMessage.telefono}`}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded"
+                  >
+                    📞 Llamar
+                  </a>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+              <FaEnvelope className="text-4xl text-gray-300 mx-auto mb-2" />
+              <p className="text-gray-500">Selecciona un mensaje para ver los detalles</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

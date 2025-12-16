@@ -201,32 +201,67 @@ export async function POST(request: NextRequest) {
 // GET /api/contact - Obtener mensajes (solo admin)
 export async function GET(request: NextRequest) {
   try {
-    // Aquí se debería agregar autenticación de admin
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
     const result = await db.query(
-      `SELECT * FROM contact_messages 
+      `SELECT id, nombre, empresa, email, telefono, asunto, mensaje, 
+              COALESCE(is_read, false) as is_read, created_at 
+       FROM contact_messages 
        ORDER BY created_at DESC 
        LIMIT $1 OFFSET $2`,
       [Math.min(limit, 100), offset]
     );
 
-    const countResult = await db.query('SELECT COUNT(*) FROM contact_messages');
-
-    return NextResponse.json({
-      messages: result.rows,
-      total: parseInt(countResult.rows[0].count),
-      limit,
-      offset
-    });
+    // Devolver array directamente para el panel admin
+    return NextResponse.json(result.rows);
 
   } catch (error) {
     console.error('Error al obtener mensajes:', error);
-    return NextResponse.json(
-      { error: 'Error al obtener mensajes' },
-      { status: 500 }
+    return NextResponse.json([], { status: 200 });
+  }
+}
+
+// PATCH /api/contact?id=X - Marcar como leído
+export async function PATCH(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
+    }
+
+    await db.query(
+      'UPDATE contact_messages SET is_read = true WHERE id = $1',
+      [id]
     );
+
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    console.error('Error al marcar mensaje:', error);
+    return NextResponse.json({ error: 'Error al actualizar' }, { status: 500 });
+  }
+}
+
+// DELETE /api/contact?id=X - Eliminar mensaje
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
+    }
+
+    await db.query('DELETE FROM contact_messages WHERE id = $1', [id]);
+
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    console.error('Error al eliminar mensaje:', error);
+    return NextResponse.json({ error: 'Error al eliminar' }, { status: 500 });
   }
 }

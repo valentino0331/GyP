@@ -188,3 +188,6 @@ CREATE INDEX IF NOT EXISTS idx_clients_visible ON clients(is_visible, display_or
 CREATE INDEX IF NOT EXISTS idx_services_visible ON services(is_visible, display_order);
 CREATE INDEX IF NOT EXISTS idx_studies_visible ON studies(is_visible, created_at);
 CREATE INDEX IF NOT EXISTS idx_team_members_visible ON team_members(is_visible, display_order);
+
+-- 12. Agregar columna is_read a contact_messages (para el panel de mensajes)
+ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS is_read BOOLEAN DEFAULT false;
