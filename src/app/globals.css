@@ -4,24 +4,32 @@
 
 :root {
   --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
+  --background-start-rgb: 255, 255, 255;
   --background-end-rgb: 255, 255, 255;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
+/* Forzar modo claro siempre */
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: rgb(var(--background-end-rgb));
+}
+
+/* Asegurar que los inputs siempre tengan texto visible */
+input, textarea, select {
+  color: #111827 !important; /* gray-900 */
+  background-color: white !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Inputs con fondo gris */
+.bg-gray-100 input,
+.bg-gray-100 textarea,
+.bg-gray-100 select,
+.bg-gray-50 input,
+.bg-gray-50 textarea,
+.bg-gray-50 select {
+  background-color: white !important;
 }

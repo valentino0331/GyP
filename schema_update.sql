@@ -93,24 +93,6 @@ CREATE TABLE IF NOT EXISTS navigation_links (
 
 -- 9. Insertar contenido inicial del sitio
 INSERT INTO site_content (section_key, section_name, content) VALUES
-('hero', 'Slider Principal', '{
-    "slides": [
-        {
-            "tag": "ENCUESTA NACIONAL",
-            "title": "Percepción ciudadana sobre gestión pública 2025",
-            "description": "Nuevo estudio revela las opiniones de los peruanos sobre el desempeño del gobierno.",
-            "cta": "LEER ESTUDIO",
-            "image": "/hero-bg.jpg"
-        },
-        {
-            "tag": "INVESTIGACIÓN DE MERCADO",
-            "title": "Tendencias de consumo digital en el Perú",
-            "description": "Análisis profundo sobre los cambios en el comportamiento del consumidor peruano.",
-            "cta": "VER RESULTADOS",
-            "image": "/hero-bg-2.jpg"
-        }
-    ]
-}'::jsonb),
 
 ('about', 'Nosotros', '{
     "subtitle": "Sobre GyP",
@@ -151,14 +133,68 @@ INSERT INTO site_content (section_key, section_name, content) VALUES
     "logo": "/logo.png",
     "description": "Investigación de mercados y estudios de opinión. Información confiable para mejores decisiones.",
     "address": "Lima, Perú",
-    "phone": "+51 XXX XXX XXX",
-    "email": "contacto@gypconsultoria.com",
+    "phone": "+51 956 478 233",
+    "email": "gypsac@hotmail.com",
     "socialMedia": {
         "facebook": "",
         "linkedin": "",
         "twitter": "",
         "instagram": ""
     }
+}'::jsonb),
+
+('hero', 'Hero Principal', '{
+    "tag": "Investigación de Mercados",
+    "title": "Información confiable para mejores decisiones",
+    "description": "Encuestas, sondeos de opinión e investigación de mercados para comprender a la sociedad, los mercados y las personas.",
+    "image": "/team-meeting.jpg"
+}'::jsonb),
+
+('stats', 'Estadísticas', '{
+    "items": [
+        {"value": "500+", "label": "Estudios"},
+        {"value": "50+", "label": "Clientes"},
+        {"value": "10K+", "label": "Encuestas"},
+        {"value": "15+", "label": "Años"}
+    ]
+}'::jsonb),
+
+('services', 'Servicios Preview', '{
+    "tag": "Servicios",
+    "title": "Soluciones de Investigación",
+    "items": [
+        {"title": "Encuestas", "description": "Diseño y aplicación de encuestas cuantitativas.", "href": "/servicios"},
+        {"title": "Sondeos de Opinión", "description": "Estudios rápidos sobre temas de actualidad.", "href": "/servicios"},
+        {"title": "Investigación de Mercados", "description": "Análisis profundo de mercados y competencia.", "href": "/servicios"},
+        {"title": "Estudios Cualitativos", "description": "Focus groups y entrevistas a profundidad.", "href": "/servicios"}
+    ]
+}'::jsonb),
+
+('studies', 'Estudios Preview', '{
+    "tag": "Publicaciones",
+    "title": "Estudios Recientes",
+    "description": "Explora nuestros últimos estudios e investigaciones. Datos actualizados sobre opinión pública, comportamiento del consumidor y tendencias de mercado.",
+    "image": "/charts-screen.jpg",
+    "highlights": [
+        {"value": "72%", "label": "prefiere marcas con propósito"},
+        {"value": "45%", "label": "incremento en compras online"}
+    ]
+}'::jsonb),
+
+('cta', 'Llamado a la Acción', '{
+    "tag": "Únete a nosotros",
+    "title": "¿Quieres participar en nuestras encuestas?",
+    "description": "Únete a nuestro panel de encuestados y contribuye con tu opinión a la toma de decisiones importantes en el Perú.",
+    "buttonText": "PARTICIPAR AHORA",
+    "image": "/survey-people.jpg"
+}'::jsonb),
+
+('quickLinks', 'Enlaces Rápidos', '{
+    "items": [
+        {"title": "Nosotros", "description": "Conoce nuestra historia y equipo", "href": "/nosotros"},
+        {"title": "Clientes", "description": "Empresas que confían en nosotros", "href": "/clientes"},
+        {"title": "Contacto", "description": "Solicita una cotización", "href": "/contacto"}
+    ]
 }'::jsonb),
 
 ('nosotros_page', 'Página Nosotros', '{
@@ -170,7 +206,10 @@ INSERT INTO site_content (section_key, section_name, content) VALUES
     "teamSectionSubtitle": "Profesionales Experimentados"
 }'::jsonb)
 
-ON CONFLICT (section_key) DO NOTHING;
+ON CONFLICT (section_key) DO UPDATE SET 
+    section_name = EXCLUDED.section_name,
+    content = EXCLUDED.content,
+    updated_at = NOW();
 
 -- 10. Insertar enlaces de navegación por defecto
 INSERT INTO navigation_links (label, href, display_order) VALUES

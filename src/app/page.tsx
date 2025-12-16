@@ -4,17 +4,39 @@ import Newsletter from '@/components/landing/Newsletter';
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
+import { db } from '@/lib/db';
 
-// Forzar renderizado dinámico para evitar errores de build
+// Forzar renderizado dinámico para obtener datos frescos siempre
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// Función para obtener el contenido de la base de datos
+async function getContent() {
+  try {
+    const result = await db.query('SELECT * FROM site_content ORDER BY section_key');
+    const contentMap: Record<string, any> = {};
+    
+    for (const row of result.rows) {
+      const content = typeof row.content === 'string' ? JSON.parse(row.content) : row.content;
+      contentMap[row.section_key] = content;
+    }
+    
+    return contentMap;
+  } catch (error) {
+    console.error('Error fetching content:', error);
+    return null;
+  }
+}
 
 // Componente Hero simplificado para home
-function HomeHero() {
+function HomeHero({ content }: { content: any }) {
+  const heroData = content?.hero || {};
+  
   return (
     <section className="relative min-h-[80vh] flex items-center overflow-hidden">
       <div className="absolute inset-0">
         <Image
-          src="/team-meeting.jpg"
+          src={heroData.image || "/team-meeting.jpg"}
           alt="GyP Consultoría"
           fill
           className="object-cover"
@@ -26,16 +48,15 @@ function HomeHero() {
       <div className="container mx-auto px-6 py-20 relative z-10">
         <div className="max-w-2xl">
           <span className="inline-block bg-teal-600 text-white text-xs font-bold uppercase tracking-wider px-3 py-1 mb-6">
-            Investigación de Mercados
+            {heroData.tag || 'Investigación de Mercados'}
           </span>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-            Información confiable para mejores decisiones
+            {heroData.title || 'Información confiable para mejores decisiones'}
           </h1>
           
           <p className="text-lg text-gray-200 mb-8 leading-relaxed">
-            Encuestas, sondeos de opinión e investigación de mercados 
-            para comprender a la sociedad, los mercados y las personas.
+            {heroData.description || 'Encuestas, sondeos de opinión e investigación de mercados para comprender a la sociedad, los mercados y las personas.'}
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4">
@@ -59,19 +80,22 @@ function HomeHero() {
 }
 
 // Stats rápidos
-function QuickStats() {
-  const stats = [
+function QuickStats({ content }: { content: any }) {
+  const statsData = content?.stats || {};
+  const defaultStats = [
     { value: '500+', label: 'Estudios' },
     { value: '50+', label: 'Clientes' },
     { value: '10K+', label: 'Encuestas' },
     { value: '15+', label: 'Años' },
   ];
+  
+  const stats = statsData.items || defaultStats;
 
   return (
     <section className="bg-gradient-to-r from-teal-600 to-teal-700 py-10 px-4">
       <div className="container mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {stats.map((stat, index) => (
+          {stats.map((stat: any, index: number) => (
             <div key={index}>
               <p className="text-4xl font-bold text-white">{stat.value}</p>
               <p className="text-teal-100">{stat.label}</p>
@@ -84,8 +108,9 @@ function QuickStats() {
 }
 
 // Servicios resumidos con links
-function ServicesPreview() {
-  const services = [
+function ServicesPreview({ content }: { content: any }) {
+  const servicesData = content?.services || {};
+  const defaultServices = [
     {
       title: 'Encuestas',
       description: 'Diseño y aplicación de encuestas cuantitativas.',
@@ -107,21 +132,23 @@ function ServicesPreview() {
       href: '/servicios',
     },
   ];
+  
+  const services = servicesData.items || defaultServices;
 
   return (
     <section className="bg-white py-16 px-4">
       <div className="container mx-auto">
         <div className="text-center mb-10">
           <span className="text-teal-600 font-bold text-sm uppercase tracking-wider">
-            Servicios
+            {servicesData.tag || 'Servicios'}
           </span>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">
-            Soluciones de Investigación
+            {servicesData.title || 'Soluciones de Investigación'}
           </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          {services.map((service, index) => (
+          {services.map((service: any, index: number) => (
             <div 
               key={index}
               className="border border-gray-200 p-6 hover:border-teal-500 transition-colors"
@@ -147,14 +174,16 @@ function ServicesPreview() {
 }
 
 // Estudios destacados con link
-function StudiesPreview() {
+function StudiesPreview({ content }: { content: any }) {
+  const studiesData = content?.studies || {};
+  
   return (
     <section className="bg-gray-100 py-16 px-4">
       <div className="container mx-auto">
         <div className="grid md:grid-cols-2 gap-8 items-center">
           <div className="relative h-80">
             <Image
-              src="/charts-screen.jpg"
+              src={studiesData.image || "/charts-screen.jpg"}
               alt="Estudios y Resultados"
               fill
               className="object-cover"
@@ -162,25 +191,24 @@ function StudiesPreview() {
           </div>
           <div>
             <span className="text-teal-600 font-bold text-sm uppercase tracking-wider">
-              Publicaciones
+              {studiesData.tag || 'Publicaciones'}
             </span>
             <h2 className="text-3xl font-bold text-gray-900 mt-2 mb-4">
-              Estudios Recientes
+              {studiesData.title || 'Estudios Recientes'}
             </h2>
             <p className="text-gray-600 mb-6">
-              Explora nuestros últimos estudios e investigaciones. 
-              Datos actualizados sobre opinión pública, comportamiento 
-              del consumidor y tendencias de mercado.
+              {studiesData.description || 'Explora nuestros últimos estudios e investigaciones. Datos actualizados sobre opinión pública, comportamiento del consumidor y tendencias de mercado.'}
             </p>
             <div className="space-y-3 mb-8">
-              <div className="flex items-center">
-                <span className="text-teal-600 font-bold text-2xl mr-3">72%</span>
-                <span className="text-gray-600">prefiere marcas con propósito</span>
-              </div>
-              <div className="flex items-center">
-                <span className="text-teal-600 font-bold text-2xl mr-3">45%</span>
-                <span className="text-gray-600">incremento en compras online</span>
-              </div>
+              {(studiesData.highlights || [
+                { value: '72%', label: 'prefiere marcas con propósito' },
+                { value: '45%', label: 'incremento en compras online' },
+              ]).map((highlight: any, index: number) => (
+                <div key={index} className="flex items-center">
+                  <span className="text-teal-600 font-bold text-2xl mr-3">{highlight.value}</span>
+                  <span className="text-gray-600">{highlight.label}</span>
+                </div>
+              ))}
             </div>
             <Link 
               href="/estudios" 
@@ -196,32 +224,33 @@ function StudiesPreview() {
 }
 
 // CTA para participar
-function ParticipatesCTA() {
+function ParticipatesCTA({ content }: { content: any }) {
+  const ctaData = content?.cta || {};
+  
   return (
     <section className="bg-gray-900 py-16 px-4">
       <div className="container mx-auto">
         <div className="grid md:grid-cols-2 gap-8 items-center">
           <div>
             <span className="text-teal-500 font-bold text-sm uppercase tracking-wider">
-              Únete a nosotros
+              {ctaData.tag || 'Únete a nosotros'}
             </span>
             <h2 className="text-3xl font-bold text-white mt-2 mb-4">
-              ¿Quieres participar en nuestras encuestas?
+              {ctaData.title || '¿Quieres participar en nuestras encuestas?'}
             </h2>
             <p className="text-gray-400 mb-6">
-              Únete a nuestro panel de encuestados y contribuye con tu opinión 
-              a la toma de decisiones importantes en el Perú.
+                {ctaData.description || 'Únete a nuestro panel de encuestados y contribuye con tu opinión a la toma de decisiones importantes en el Perú.'}
             </p>
             <Link 
               href="/encuestas" 
               className="inline-block bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-8 transition-colors"
             >
-              PARTICIPAR AHORA
+              {ctaData.buttonText || 'PARTICIPAR AHORA'}
             </Link>
           </div>
           <div className="relative h-64">
             <Image
-              src="/survey-people.jpg"
+              src={ctaData.image || "/survey-people.jpg"}
               alt="Participa en encuestas"
               fill
               className="object-cover"
@@ -234,18 +263,21 @@ function ParticipatesCTA() {
 }
 
 // Links rápidos
-function QuickLinks() {
-  const links = [
+function QuickLinks({ content }: { content: any }) {
+  const linksData = content?.quickLinks || {};
+  const defaultLinks = [
     { title: 'Nosotros', description: 'Conoce nuestra historia y equipo', href: '/nosotros' },
     { title: 'Clientes', description: 'Empresas que confían en nosotros', href: '/clientes' },
     { title: 'Contacto', description: 'Solicita una cotización', href: '/contacto' },
   ];
+  
+  const links = linksData.items || defaultLinks;
 
   return (
     <section className="bg-white py-12 px-4">
       <div className="container mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {links.map((link, index) => (
+          {links.map((link: any, index: number) => (
             <Link 
               key={index} 
               href={link.href}
@@ -266,16 +298,18 @@ function QuickLinks() {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const content = await getContent();
+  
   return (
     <main className="bg-white text-gray-800">
       <Header />
-      <HomeHero />
-      <QuickStats />
-      <ServicesPreview />
-      <StudiesPreview />
-      <ParticipatesCTA />
-      <QuickLinks />
+      <HomeHero content={content} />
+      <QuickStats content={content} />
+      <ServicesPreview content={content} />
+      <StudiesPreview content={content} />
+      <ParticipatesCTA content={content} />
+      <QuickLinks content={content} />
       <Newsletter />
       <Footer />
     </main>
