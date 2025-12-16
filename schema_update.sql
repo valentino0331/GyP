@@ -191,3 +191,18 @@ CREATE INDEX IF NOT EXISTS idx_team_members_visible ON team_members(is_visible, 
 
 -- 12. Agregar columna is_read a contact_messages (para el panel de mensajes)
 ALTER TABLE contact_messages ADD COLUMN IF NOT EXISTS is_read BOOLEAN DEFAULT false;
+
+-- 13. Insertar servicios iniciales de ejemplo
+INSERT INTO services (title, description, icon, display_order) VALUES
+('Investigación de Mercados', 'Estudios cuantitativos y cualitativos para conocer a tu público objetivo, competencia y oportunidades de mercado.', 'chart', 1),
+('Estudios de Opinión Pública', 'Encuestas y sondeos para medir la percepción ciudadana sobre temas políticos, sociales y económicos.', 'users', 2),
+('Análisis de Datos', 'Procesamiento y análisis estadístico de grandes volúmenes de información para obtener insights accionables.', 'graph', 3),
+('Consultoría Estratégica', 'Asesoría especializada para la toma de decisiones basada en datos e investigación.', 'target', 4)
+ON CONFLICT DO NOTHING;
+
+-- 14. Insertar miembros del equipo de ejemplo
+INSERT INTO team_members (name, position, bio, display_order) VALUES
+('Director General', 'CEO & Fundador', 'Más de 20 años de experiencia en investigación de mercados y consultoría estratégica.', 1),
+('Directora de Investigación', 'Head of Research', 'Especialista en metodologías cuantitativas y cualitativas con amplia experiencia en el sector.', 2),
+('Analista Senior', 'Data Analyst', 'Experto en procesamiento de datos y visualización de información.', 3)
+ON CONFLICT DO NOTHING;

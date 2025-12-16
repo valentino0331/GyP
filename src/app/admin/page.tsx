@@ -2517,7 +2517,13 @@ function ServiciosContent() {
           <FaBriefcase className="text-6xl text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-gray-700 mb-2">Sin servicios configurados</h3>
           <p className="text-gray-500 mb-4">Los servicios se mostrarán en la página de Servicios</p>
-          <p className="text-sm text-yellow-600">💡 Ejecuta el schema_update.sql para crear la tabla de servicios</p>
+          <button
+            onClick={() => { setEditingService(null); setShowModal(true); }}
+            className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded inline-flex items-center gap-2"
+          >
+            <FaPlus className="w-4 h-4" />
+            Agregar primer servicio
+          </button>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
@@ -2603,7 +2609,13 @@ function EquipoContent() {
           <FaUserTie className="text-6xl text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-gray-700 mb-2">Sin miembros del equipo</h3>
           <p className="text-gray-500 mb-4">Agrega los miembros de tu equipo para mostrarlos en la página</p>
-          <p className="text-sm text-yellow-600">💡 Ejecuta el schema_update.sql para crear la tabla de equipo</p>
+          <button
+            onClick={() => { setEditingMember(null); setShowModal(true); }}
+            className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded inline-flex items-center gap-2"
+          >
+            <FaPlus className="w-4 h-4" />
+            Agregar primer miembro
+          </button>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
