@@ -8,5 +8,13 @@ interface Props {
 }
 
 export default function AuthProvider({ children }: Props) {
-  return <SessionProvider>{children}</SessionProvider>;
+  // Usar basePath para evitar errores si NEXTAUTH_URL no está configurado
+  return (
+    <SessionProvider 
+      basePath="/api/auth"
+      refetchOnWindowFocus={false}
+    >
+      {children}
+    </SessionProvider>
+  );
 }

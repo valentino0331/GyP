@@ -5,6 +5,9 @@ import Presentation from '@/components/landing/Presentation';
 import Methodology from '@/components/landing/Methodology';
 import Image from 'next/image';
 
+// Forzar renderizado dinámico para evitar errores de build
+export const dynamic = 'force-dynamic';
+
 export default function ServiciosPage() {
   return (
     <main className="bg-white">

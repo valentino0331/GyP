@@ -5,6 +5,9 @@ import Charts from '@/components/landing/Charts';
 import RecentStudies from '@/components/landing/RecentStudies';
 import Image from 'next/image';
 
+// Forzar renderizado dinámico para evitar errores de build
+export const dynamic = 'force-dynamic';
+
 export default function EstudiosPage() {
   return (
     <main className="bg-white">

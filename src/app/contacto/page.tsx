@@ -4,6 +4,9 @@ import Footer from '@/components/landing/Footer';
 import Contact from '@/components/landing/Contact';
 import Image from 'next/image';
 
+// Forzar renderizado dinámico para evitar errores de build
+export const dynamic = 'force-dynamic';
+
 export default function ContactoPage() {
   return (
     <main className="bg-white">

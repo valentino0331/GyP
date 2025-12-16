@@ -5,6 +5,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
 
+// Forzar renderizado dinámico para evitar errores de build
+export const dynamic = 'force-dynamic';
+
 // Componente Hero simplificado para home
 function HomeHero() {
   return (

@@ -5,6 +5,9 @@ import About from '@/components/landing/About';
 import MissionVision from '@/components/landing/MissionVision';
 import Image from 'next/image';
 
+// Forzar renderizado dinámico para evitar errores de build
+export const dynamic = 'force-dynamic';
+
 export default function NosotrosPage() {
   return (
     <main className="bg-white">
