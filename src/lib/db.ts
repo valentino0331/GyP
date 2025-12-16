@@ -1,11 +1,12 @@
 import { Pool } from 'pg';
 
-// Netlify usa NETLIFY_DATABASE_URL, pero también soportamos DATABASE_URL
-const connectionString = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
+// Priorizar DATABASE_URL manual sobre NETLIFY_DATABASE_URL automático
+const connectionString = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
 
 // Log para depurar en Netlify
-console.log('DATABASE_URL exists:', !!connectionString);
-console.log('DATABASE_URL length:', connectionString?.length || 0);
+console.log('Using DATABASE_URL:', !!process.env.DATABASE_URL);
+console.log('Using NETLIFY_DATABASE_URL:', !!process.env.NETLIFY_DATABASE_URL);
+console.log('Connection string length:', connectionString?.length || 0);
 
 // Mostrar las primeras partes de la URL para debug (sin mostrar password)
 if (connectionString) {
@@ -16,7 +17,7 @@ if (connectionString) {
     console.log('DB Name:', url.pathname);
   } catch (e) {
     console.log('Error parsing URL:', e);
-    console.log('URL starts with:', connectionString.substring(0, 30));
+    console.log('URL starts with:', connectionString.substring(0, 50));
   }
 }
 
