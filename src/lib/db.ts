@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 
-const connectionString = process.env.DATABASE_URL;
+// Netlify usa NETLIFY_DATABASE_URL, pero también soportamos DATABASE_URL
+const connectionString = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
 
 // Log para depurar en Netlify
 console.log('DATABASE_URL exists:', !!connectionString);
@@ -11,7 +12,9 @@ let pool: Pool;
 if (connectionString) {
   pool = new Pool({
     connectionString,
-    ssl: true,
+    ssl: {
+      rejectUnauthorized: false
+    },
   });
   console.log('Pool de base de datos creado correctamente');
 } else {
