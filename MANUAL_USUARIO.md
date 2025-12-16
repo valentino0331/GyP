@@ -74,6 +74,33 @@ Contraseña: admin123
 
 ---
 
+## � Tipos de Usuario (Roles)
+
+El sistema cuenta con **dos tipos de usuario**:
+
+### 👑 Administrador General
+Tiene acceso completo a todas las funciones:
+- ✅ Ver Dashboard
+- ✅ Crear, editar y eliminar encuestas
+- ✅ **Editar todo el contenido del sitio web** (textos, títulos, descripciones)
+- ✅ **Gestionar la galería de trabajos** (subir fotos de evidencias)
+- ✅ **Gestionar clientes** (agregar logos y nombres de empresas)
+- ✅ **Crear y administrar usuarios** (crear editores y otros administradores)
+- ✅ Ver reportes
+- ✅ Cambiar configuración
+
+### ✏️ Editor
+Tiene acceso limitado solo a encuestas:
+- ✅ Ver Dashboard
+- ✅ Crear, editar y eliminar encuestas
+- ❌ NO puede editar contenido del sitio
+- ❌ NO puede gestionar galería
+- ❌ NO puede gestionar clientes
+- ❌ NO puede crear usuarios
+- ❌ NO puede ver reportes ni configuración
+
+---
+
 ## 📊 Panel de Administración
 
 Una vez que inicie sesión, tendrá acceso al panel de administración donde podrá gestionar:
@@ -84,6 +111,114 @@ Vista general con:
 - Número de respuestas recibidas
 - Encuestas activas
 - Actividad reciente
+
+---
+
+## 🌐 Gestión de Contenido (Solo Administradores)
+
+### ¿Qué puedo editar?
+Como administrador, puede cambiar TODO el texto del sitio web:
+
+1. **Slider Principal (Hero)**
+   - Títulos de los slides
+   - Descripciones
+   - Botones de acción
+
+2. **Sección Nosotros**
+   - Título de la sección (puede cambiar "Nosotros" por "Nuestro Trabajo", etc.)
+   - Descripción de la empresa
+   - Estadísticas (años de experiencia, clientes, estudios)
+
+3. **Misión y Visión**
+   - Textos de misión
+   - Textos de visión
+   - Valores de la empresa
+
+4. **Información de Empresa**
+   - Nombre de la empresa
+   - Dirección
+   - Teléfono
+   - Email de contacto
+   - Redes sociales
+
+### Cómo editar el contenido
+
+1. Ingrese al panel de administración
+2. Vaya a la sección **"Contenido"** en el menú lateral
+3. Verá una lista de secciones editables
+4. Haga clic en **"Editar"** en la sección que desea modificar
+5. Modifique los campos de texto
+6. Haga clic en **"Guardar Cambios"**
+
+💡 **Tip**: Puede cambiar el nombre visible de las secciones. Por ejemplo, si quiere que "Nosotros" se llame "Nuestro Trabajo", simplemente edite el campo "Nombre de la sección".
+
+---
+
+## 🖼️ Galería de Trabajos (Solo Administradores)
+
+La galería le permite mostrar evidencias de los trabajos realizados.
+
+### Agregar una imagen
+
+1. Vaya a la sección **"Galería"** en el menú lateral
+2. Haga clic en **"Agregar Imagen"**
+3. Complete los campos:
+   - **Título**: Nombre descriptivo del trabajo
+   - **Descripción**: Breve explicación (opcional)
+   - **Imagen**: Haga clic para subir una foto
+4. Haga clic en **"Guardar"**
+
+### Administrar imágenes
+
+- 👁️ **Ojo**: Ocultar/mostrar la imagen en el sitio
+- ✏️ **Lápiz**: Editar título o descripción
+- 🗑️ **Basura**: Eliminar la imagen
+
+---
+
+## 🏢 Gestión de Clientes (Solo Administradores)
+
+Muestre los logos de las empresas que han trabajado con ustedes.
+
+### Agregar un cliente
+
+1. Vaya a la sección **"Clientes"** en el menú lateral
+2. Haga clic en **"Agregar Cliente"**
+3. Complete los campos:
+   - **Nombre**: Nombre de la empresa
+   - **Website**: Sitio web del cliente (opcional)
+   - **Descripción**: Breve descripción (opcional)
+   - **Logo**: Suba el logo de la empresa
+4. Haga clic en **"Guardar"**
+
+---
+
+## 👤 Gestión de Usuarios (Solo Administradores)
+
+### Crear un nuevo usuario
+
+1. Vaya a la sección **"Usuarios"** en el menú lateral
+2. Haga clic en **"Nuevo Usuario"**
+3. Complete los campos:
+   - **Nombre**: Nombre completo
+   - **Email**: Correo electrónico (será el usuario)
+   - **Contraseña**: Mínimo 6 caracteres
+   - **Rol**: Seleccione "Editor" o "Administrador"
+4. Haga clic en **"Crear Usuario"**
+
+### Editar un usuario
+
+1. En la lista de usuarios, haga clic en el ícono de **lápiz**
+2. Modifique los campos necesarios
+3. Deje la contraseña vacía si no desea cambiarla
+4. Haga clic en **"Actualizar"**
+
+### Eliminar un usuario
+
+1. En la lista de usuarios, haga clic en el ícono de **basura**
+2. Confirme la eliminación
+
+⚠️ **Nota**: No puede eliminarse a sí mismo.
 
 ---
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { FaUsers, FaPoll, FaChartBar, FaCog, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaEye, FaCheck, FaTimes, FaBars, FaSpinner, FaImage, FaUpload, FaCalendar, FaCopy, FaDownload } from 'react-icons/fa';
+import { FaUsers, FaPoll, FaChartBar, FaCog, FaSignOutAlt, FaPlus, FaEdit, FaTrash, FaEye, FaCheck, FaTimes, FaBars, FaSpinner, FaImage, FaUpload, FaCalendar, FaCopy, FaDownload, FaGlobe, FaBuilding, FaImages } from 'react-icons/fa';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
@@ -42,7 +42,34 @@ interface User {
   created_at: string;
 }
 
-type Tab = 'dashboard' | 'encuestas' | 'usuarios' | 'reportes' | 'configuracion';
+interface SiteContent {
+  id: string;
+  section_key: string;
+  section_name: string;
+  content: any;
+  updated_at: string;
+}
+
+interface GalleryItem {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string;
+  display_order: number;
+  is_visible: boolean;
+}
+
+interface Client {
+  id: string;
+  name: string;
+  logo_url: string;
+  website: string;
+  description: string;
+  display_order: number;
+  is_visible: boolean;
+}
+
+type Tab = 'dashboard' | 'encuestas' | 'contenido' | 'galeria' | 'clientes' | 'usuarios' | 'reportes' | 'configuracion';
 
 export default function AdminPage() {
   const { data: session, status } = useSession();
@@ -51,6 +78,10 @@ export default function AdminPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modalCrear, setModalCrear] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Obtener el rol del usuario
+  const userRole = (session?.user as any)?.role || 'editor';
+  const isAdmin = userRole === 'admin';
 
   // Auto-cerrar sidebar en móvil
   useEffect(() => {
@@ -72,6 +103,13 @@ export default function AdminPage() {
     }
   }, [status, router]);
 
+  // Si es editor y está en una pestaña no permitida, redirigir a encuestas
+  useEffect(() => {
+    if (!isAdmin && !['dashboard', 'encuestas'].includes(activeTab)) {
+      setActiveTab('encuestas');
+    }
+  }, [isAdmin, activeTab]);
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -82,13 +120,19 @@ export default function AdminPage() {
 
   if (!session) return null;
 
-  const menuItems = [
-    { id: 'dashboard' as Tab, label: 'Dashboard', icon: FaChartBar },
-    { id: 'encuestas' as Tab, label: 'Encuestas', icon: FaPoll },
-    { id: 'usuarios' as Tab, label: 'Usuarios', icon: FaUsers },
-    { id: 'reportes' as Tab, label: 'Reportes', icon: FaChartBar },
-    { id: 'configuracion' as Tab, label: 'Configuración', icon: FaCog },
+  // Menú según rol
+  const allMenuItems = [
+    { id: 'dashboard' as Tab, label: 'Dashboard', icon: FaChartBar, adminOnly: false },
+    { id: 'encuestas' as Tab, label: 'Encuestas', icon: FaPoll, adminOnly: false },
+    { id: 'contenido' as Tab, label: 'Contenido', icon: FaGlobe, adminOnly: true },
+    { id: 'galeria' as Tab, label: 'Galería', icon: FaImages, adminOnly: true },
+    { id: 'clientes' as Tab, label: 'Clientes', icon: FaBuilding, adminOnly: true },
+    { id: 'usuarios' as Tab, label: 'Usuarios', icon: FaUsers, adminOnly: true },
+    { id: 'reportes' as Tab, label: 'Reportes', icon: FaChartBar, adminOnly: true },
+    { id: 'configuracion' as Tab, label: 'Configuración', icon: FaCog, adminOnly: true },
   ];
+
+  const menuItems = isAdmin ? allMenuItems : allMenuItems.filter(item => !item.adminOnly);
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -169,8 +213,13 @@ export default function AdminPage() {
             <h1 className="text-lg lg:text-xl font-bold text-gray-900 capitalize">{activeTab}</h1>
           </div>
           <div className="flex items-center space-x-2 lg:space-x-4">
-            <span className="text-sm text-gray-600 hidden sm:block">{session.user?.name}</span>
-            <div className="w-8 h-8 lg:w-10 lg:h-10 bg-teal-600 rounded-full flex items-center justify-center text-white font-bold text-sm lg:text-base">
+            <div className="hidden sm:flex flex-col items-end">
+              <span className="text-sm font-medium text-gray-900">{session.user?.name}</span>
+              <span className={`text-xs px-2 py-0.5 rounded ${isAdmin ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                {isAdmin ? '👑 Admin' : '✏️ Editor'}
+              </span>
+            </div>
+            <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center text-white font-bold text-sm lg:text-base ${isAdmin ? 'bg-purple-600' : 'bg-teal-600'}`}>
               {session.user?.name?.charAt(0) || 'A'}
             </div>
           </div>
@@ -179,9 +228,12 @@ export default function AdminPage() {
         <main className="flex-1 p-4 lg:p-6 overflow-auto">
           {activeTab === 'dashboard' && <DashboardContent key={refreshKey} />}
           {activeTab === 'encuestas' && <EncuestasContent key={refreshKey} onCrear={() => setModalCrear(true)} />}
-          {activeTab === 'usuarios' && <UsuariosContent />}
-          {activeTab === 'reportes' && <ReportesContent />}
-          {activeTab === 'configuracion' && <ConfiguracionContent />}
+          {activeTab === 'contenido' && isAdmin && <ContenidoContent />}
+          {activeTab === 'galeria' && isAdmin && <GaleriaContent />}
+          {activeTab === 'clientes' && isAdmin && <ClientesContent />}
+          {activeTab === 'usuarios' && isAdmin && <UsuariosContent />}
+          {activeTab === 'reportes' && isAdmin && <ReportesContent />}
+          {activeTab === 'configuracion' && isAdmin && <ConfiguracionContent />}
         </main>
       </div>
 
@@ -546,10 +598,13 @@ function EncuestasContent({ onCrear }: { onCrear: () => void }) {
   );
 }
 
-// Usuarios
+// Usuarios con CRUD completo
 function UsuariosContent() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -569,6 +624,25 @@ function UsuariosContent() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer.')) return;
+    
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/users?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setUsers(users.filter(u => u.id !== id));
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error al eliminar usuario');
+      }
+    } catch (err) {
+      alert('Error al eliminar usuario');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -584,6 +658,22 @@ function UsuariosContent() {
           <h2 className="text-lg font-bold text-gray-900">Gestión de Usuarios</h2>
           <p className="text-sm text-gray-500">Administra usuarios y permisos</p>
         </div>
+        <button
+          onClick={() => { setEditingUser(null); setShowModal(true); }}
+          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded transition-colors"
+        >
+          <FaPlus className="w-4 h-4" />
+          Nuevo Usuario
+        </button>
+      </div>
+
+      {/* Info de roles */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 className="text-blue-800 font-bold mb-2">📋 Tipos de Usuario</h4>
+        <ul className="text-sm text-blue-700 space-y-1">
+          <li><strong>Administrador:</strong> Acceso completo. Puede editar contenido del sitio, usuarios, galería, clientes y encuestas.</li>
+          <li><strong>Editor:</strong> Solo puede ver el dashboard y gestionar encuestas. No puede editar el contenido del sitio.</li>
+        </ul>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -599,6 +689,7 @@ function UsuariosContent() {
                 <th className="text-left px-6 py-3 text-xs font-bold text-gray-500 uppercase">Usuario</th>
                 <th className="text-left px-6 py-3 text-xs font-bold text-gray-500 uppercase">Rol</th>
                 <th className="text-left px-6 py-3 text-xs font-bold text-gray-500 uppercase">Registro</th>
+                <th className="text-left px-6 py-3 text-xs font-bold text-gray-500 uppercase">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -606,7 +697,9 @@ function UsuariosContent() {
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-bold">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                        user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700'
+                      }`}>
                         {user.name.charAt(0)}
                       </div>
                       <div>
@@ -616,20 +709,191 @@ function UsuariosContent() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`text-xs font-bold px-2 py-1 rounded capitalize ${
-                      user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
+                    <span className={`text-xs font-bold px-2 py-1 rounded ${
+                      user.role === 'admin' 
+                        ? 'bg-purple-100 text-purple-700' 
+                        : 'bg-blue-100 text-blue-700'
                     }`}>
-                      {user.role}
+                      {user.role === 'admin' ? '👑 Administrador' : '✏️ Editor'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-gray-600">
                     {new Date(user.created_at).toLocaleDateString('es-PE')}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setEditingUser(user); setShowModal(true); }}
+                        className="text-teal-600 hover:text-teal-700"
+                        title="Editar"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(user.id)}
+                        disabled={deleting === user.id}
+                        className="text-red-600 hover:text-red-700 disabled:opacity-50"
+                        title="Eliminar"
+                      >
+                        {deleting === user.id ? <FaSpinner className="animate-spin" /> : <FaTrash />}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
+      </div>
+
+      {showModal && (
+        <ModalUsuario
+          user={editingUser}
+          onClose={() => setShowModal(false)}
+          onSuccess={() => { setShowModal(false); fetchUsers(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Modal para crear/editar usuario
+function ModalUsuario({ user, onClose, onSuccess }: {
+  user: User | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState(user?.role || 'editor');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    if (!name || !email) {
+      setError('Nombre y email son requeridos');
+      return;
+    }
+    if (!user && !password) {
+      setError('La contraseña es requerida para nuevos usuarios');
+      return;
+    }
+    if (password && password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+    
+    try {
+      const method = user ? 'PUT' : 'POST';
+      const body: any = { name, email, role };
+      if (user) body.id = user.id;
+      if (password) body.password = password;
+
+      const res = await fetch('/api/users', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Error al guardar');
+      }
+      
+      onSuccess();
+    } catch (err: any) {
+      setError(err.message || 'Error al guardar usuario');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">
+            {user ? 'Editar Usuario' : 'Nuevo Usuario'}
+          </h2>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded p-3">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900"
+              placeholder="Nombre completo"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900"
+              placeholder="correo@ejemplo.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Contraseña {user ? '(dejar vacío para mantener actual)' : '*'}
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900"
+              placeholder={user ? '••••••••' : 'Mínimo 6 caracteres'}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rol *</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 bg-white"
+            >
+              <option value="editor">✏️ Editor (solo encuestas)</option>
+              <option value="admin">👑 Administrador (acceso completo)</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              {role === 'admin' 
+                ? 'Podrá editar todo el contenido del sitio, usuarios, galería y clientes.'
+                : 'Solo podrá ver el dashboard y gestionar encuestas.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+          <button onClick={onClose} className="text-gray-600 hover:text-gray-800 font-medium px-4 py-2">
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded disabled:opacity-50 flex items-center gap-2"
+          >
+            {saving && <FaSpinner className="animate-spin w-4 h-4" />}
+            {user ? 'Actualizar' : 'Crear Usuario'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1173,6 +1437,880 @@ function ModalCrearEncuesta({ onClose, onSuccess }: { onClose: () => void; onSuc
               {paso === 3 ? 'Guardar' : 'Siguiente'}
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// COMPONENTE: GESTIÓN DE CONTENIDO DEL SITIO
+// ==========================================
+function ContenidoContent() {
+  const [sections, setSections] = useState<SiteContent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [editingSection, setEditingSection] = useState<SiteContent | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchSections();
+  }, []);
+
+  const fetchSections = async () => {
+    try {
+      const res = await fetch('/api/content');
+      if (!res.ok) throw new Error('Error al cargar contenido');
+      const data = await res.json();
+      setSections(data);
+    } catch (err) {
+      setError('No se pudo cargar el contenido. Ejecuta el script schema_update.sql en tu base de datos.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (section: SiteContent) => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/content', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section_key: section.section_key,
+          section_name: section.section_name,
+          content: section.content
+        }),
+      });
+      if (!res.ok) throw new Error('Error al guardar');
+      const updated = await res.json();
+      setSections(sections.map(s => s.section_key === updated.section_key ? updated : s));
+      setEditingSection(null);
+      alert('¡Contenido actualizado correctamente!');
+    } catch (err) {
+      alert('Error al guardar el contenido');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <FaSpinner className="animate-spin text-4xl text-teal-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+        <h3 className="text-yellow-800 font-bold mb-2">⚠️ Configuración Requerida</h3>
+        <p className="text-yellow-700 mb-4">{error}</p>
+        <p className="text-sm text-yellow-600">
+          Ejecuta el archivo <code className="bg-yellow-100 px-1 rounded">schema_update.sql</code> en tu base de datos PostgreSQL para habilitar esta función.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold text-gray-900">Gestión de Contenido</h2>
+        <p className="text-sm text-gray-500">Edita los textos e información que aparecen en el sitio web</p>
+      </div>
+
+      {sections.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <FaGlobe className="text-6xl text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-gray-700 mb-2">Sin contenido configurado</h3>
+          <p className="text-gray-500">Ejecuta el script SQL para crear el contenido inicial</p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {sections.map((section) => (
+            <div key={section.section_key} className="bg-white rounded-lg shadow-sm p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-gray-900">{section.section_name}</h3>
+                  <p className="text-xs text-gray-500">Clave: {section.section_key}</p>
+                </div>
+                <button
+                  onClick={() => setEditingSection(section)}
+                  className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                >
+                  <FaEdit className="w-4 h-4" />
+                  Editar
+                </button>
+              </div>
+              <p className="text-sm text-gray-600">
+                Última actualización: {new Date(section.updated_at).toLocaleString('es-PE')}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal de edición */}
+      {editingSection && (
+        <ModalEditarContenido
+          section={editingSection}
+          onClose={() => setEditingSection(null)}
+          onSave={handleSave}
+          saving={saving}
+        />
+      )}
+    </div>
+  );
+}
+
+// Modal para editar contenido
+function ModalEditarContenido({ section, onClose, onSave, saving }: {
+  section: SiteContent;
+  onClose: () => void;
+  onSave: (section: SiteContent) => void;
+  saving: boolean;
+}) {
+  const [editedSection, setEditedSection] = useState<SiteContent>({ ...section });
+  const [jsonError, setJsonError] = useState('');
+
+  const handleContentChange = (key: string, value: any) => {
+    setEditedSection({
+      ...editedSection,
+      content: {
+        ...editedSection.content,
+        [key]: value
+      }
+    });
+  };
+
+  const renderContentEditor = () => {
+    const content = editedSection.content;
+    
+    // Renderizar campos según el tipo de contenido
+    if (typeof content !== 'object') {
+      return (
+        <textarea
+          value={JSON.stringify(content, null, 2)}
+          onChange={(e) => {
+            try {
+              const parsed = JSON.parse(e.target.value);
+              setEditedSection({ ...editedSection, content: parsed });
+              setJsonError('');
+            } catch {
+              setJsonError('JSON inválido');
+            }
+          }}
+          className="w-full h-64 border border-gray-300 rounded px-3 py-2 font-mono text-sm"
+        />
+      );
+    }
+
+    return (
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+        {Object.entries(content).map(([key, value]) => (
+          <div key={key} className="border-b border-gray-100 pb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
+              {key.replace(/_/g, ' ')}
+            </label>
+            {typeof value === 'string' ? (
+              value.length > 100 ? (
+                <textarea
+                  value={value}
+                  onChange={(e) => handleContentChange(key, e.target.value)}
+                  rows={4}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:ring-2 focus:ring-teal-500"
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={value}
+                  onChange={(e) => handleContentChange(key, e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:ring-2 focus:ring-teal-500"
+                />
+              )
+            ) : Array.isArray(value) ? (
+              <div className="bg-gray-50 rounded p-3">
+                <p className="text-xs text-gray-500 mb-2">Array con {value.length} elementos</p>
+                <textarea
+                  value={JSON.stringify(value, null, 2)}
+                  onChange={(e) => {
+                    try {
+                      const parsed = JSON.parse(e.target.value);
+                      handleContentChange(key, parsed);
+                      setJsonError('');
+                    } catch {
+                      setJsonError(`Error en ${key}: JSON inválido`);
+                    }
+                  }}
+                  rows={Math.min(10, value.length * 3 + 2)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-xs text-gray-900"
+                />
+              </div>
+            ) : typeof value === 'object' ? (
+              <div className="bg-gray-50 rounded p-3">
+                <textarea
+                  value={JSON.stringify(value, null, 2)}
+                  onChange={(e) => {
+                    try {
+                      const parsed = JSON.parse(e.target.value);
+                      handleContentChange(key, parsed);
+                      setJsonError('');
+                    } catch {
+                      setJsonError(`Error en ${key}: JSON inválido`);
+                    }
+                  }}
+                  rows={6}
+                  className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-xs text-gray-900"
+                />
+              </div>
+            ) : (
+              <input
+                type="text"
+                value={String(value)}
+                onChange={(e) => handleContentChange(key, e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:ring-2 focus:ring-teal-500"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Editar: {editedSection.section_name}</h2>
+              <input
+                type="text"
+                value={editedSection.section_name}
+                onChange={(e) => setEditedSection({ ...editedSection, section_name: e.target.value })}
+                placeholder="Nombre de la sección"
+                className="mt-2 text-sm border border-gray-300 rounded px-2 py-1 text-gray-700"
+              />
+            </div>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <FaTimes className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {jsonError && (
+            <div className="bg-red-50 border border-red-200 rounded p-3 mb-4">
+              <p className="text-red-600 text-sm">{jsonError}</p>
+            </div>
+          )}
+          {renderContentEditor()}
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="text-gray-600 hover:text-gray-800 font-medium px-4 py-2"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => onSave(editedSection)}
+            disabled={saving || !!jsonError}
+            className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded transition-colors flex items-center gap-2 disabled:opacity-50"
+          >
+            {saving && <FaSpinner className="animate-spin w-4 h-4" />}
+            Guardar Cambios
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// COMPONENTE: GALERÍA DE TRABAJOS
+// ==========================================
+function GaleriaContent() {
+  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
+
+  useEffect(() => {
+    fetchGallery();
+  }, []);
+
+  const fetchGallery = async () => {
+    try {
+      const res = await fetch('/api/gallery');
+      if (!res.ok) throw new Error('Error al cargar galería');
+      const data = await res.json();
+      setItems(data);
+    } catch (err) {
+      setError('No se pudo cargar la galería. Ejecuta el script schema_update.sql.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Eliminar esta imagen de la galería?')) return;
+    try {
+      await fetch(`/api/gallery?id=${id}`, { method: 'DELETE' });
+      setItems(items.filter(i => i.id !== id));
+    } catch (err) {
+      alert('Error al eliminar');
+    }
+  };
+
+  const handleToggleVisibility = async (item: GalleryItem) => {
+    try {
+      await fetch('/api/gallery', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id, is_visible: !item.is_visible }),
+      });
+      setItems(items.map(i => i.id === item.id ? { ...i, is_visible: !i.is_visible } : i));
+    } catch (err) {
+      alert('Error al actualizar');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <FaSpinner className="animate-spin text-4xl text-teal-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+        <h3 className="text-yellow-800 font-bold mb-2">⚠️ Configuración Requerida</h3>
+        <p className="text-yellow-700">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-lg font-bold text-gray-900">Galería de Trabajos</h2>
+          <p className="text-sm text-gray-500">Evidencias y fotos de trabajos realizados</p>
+        </div>
+        <button
+          onClick={() => { setEditingItem(null); setShowModal(true); }}
+          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded transition-colors"
+        >
+          <FaPlus className="w-4 h-4" />
+          Agregar Imagen
+        </button>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <FaImages className="text-6xl text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-gray-700 mb-2">Sin imágenes</h3>
+          <p className="text-gray-500">Agrega fotos de tus trabajos realizados</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {items.map((item) => (
+            <div key={item.id} className={`bg-white rounded-lg shadow-sm overflow-hidden ${!item.is_visible ? 'opacity-60' : ''}`}>
+              <div className="relative h-48">
+                <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
+                {!item.is_visible && (
+                  <div className="absolute top-2 left-2 bg-gray-800 text-white text-xs px-2 py-1 rounded">
+                    Oculto
+                  </div>
+                )}
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-gray-900">{item.title}</h3>
+                {item.description && <p className="text-sm text-gray-600 mt-1">{item.description}</p>}
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => { setEditingItem(item); setShowModal(true); }}
+                    className="text-teal-600 hover:text-teal-700"
+                  >
+                    <FaEdit />
+                  </button>
+                  <button
+                    onClick={() => handleToggleVisibility(item)}
+                    className={item.is_visible ? 'text-green-600' : 'text-gray-400'}
+                  >
+                    <FaEye />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showModal && (
+        <ModalGalleryItem
+          item={editingItem}
+          onClose={() => setShowModal(false)}
+          onSuccess={() => { setShowModal(false); fetchGallery(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Modal para agregar/editar imagen de galería
+function ModalGalleryItem({ item, onClose, onSuccess }: {
+  item: GalleryItem | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [title, setTitle] = useState(item?.title || '');
+  const [description, setDescription] = useState(item?.description || '');
+  const [imageUrl, setImageUrl] = useState(item?.image_url || '');
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.url) setImageUrl(data.url);
+    } catch (err) {
+      alert('Error al subir imagen');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!title || !imageUrl) {
+      alert('Título e imagen son requeridos');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const method = item ? 'PUT' : 'POST';
+      const body = item
+        ? { id: item.id, title, description, image_url: imageUrl }
+        : { title, description, image_url: imageUrl };
+
+      const res = await fetch('/api/gallery', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) throw new Error('Error al guardar');
+      onSuccess();
+    } catch (err) {
+      alert('Error al guardar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">
+            {item ? 'Editar Imagen' : 'Nueva Imagen'}
+          </h2>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900"
+              placeholder="Ej: Trabajo en empresa ABC"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900"
+              rows={3}
+              placeholder="Descripción del trabajo..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Imagen *</label>
+            {imageUrl ? (
+              <div className="relative">
+                <img src={imageUrl} alt="Preview" className="w-full h-40 object-cover rounded" />
+                <button
+                  onClick={() => setImageUrl('')}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+                >
+                  <FaTimes className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <label className="block border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-teal-500">
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                {uploading ? (
+                  <FaSpinner className="animate-spin text-2xl text-gray-400 mx-auto" />
+                ) : (
+                  <>
+                    <FaImage className="text-3xl text-gray-400 mx-auto mb-2" />
+                    <span className="text-gray-500">Clic para subir imagen</span>
+                  </>
+                )}
+              </label>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+          <button onClick={onClose} className="text-gray-600 hover:text-gray-800 font-medium px-4 py-2">
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving || uploading}
+            className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded disabled:opacity-50 flex items-center gap-2"
+          >
+            {saving && <FaSpinner className="animate-spin w-4 h-4" />}
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// COMPONENTE: GESTIÓN DE CLIENTES
+// ==========================================
+function ClientesContent() {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const res = await fetch('/api/clients');
+      if (!res.ok) throw new Error('Error al cargar clientes');
+      const data = await res.json();
+      setClients(data);
+    } catch (err) {
+      setError('No se pudieron cargar los clientes. Ejecuta el script schema_update.sql.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Eliminar este cliente?')) return;
+    try {
+      await fetch(`/api/clients?id=${id}`, { method: 'DELETE' });
+      setClients(clients.filter(c => c.id !== id));
+    } catch (err) {
+      alert('Error al eliminar');
+    }
+  };
+
+  const handleToggleVisibility = async (client: Client) => {
+    try {
+      await fetch('/api/clients', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: client.id, is_visible: !client.is_visible }),
+      });
+      setClients(clients.map(c => c.id === client.id ? { ...c, is_visible: !c.is_visible } : c));
+    } catch (err) {
+      alert('Error al actualizar');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <FaSpinner className="animate-spin text-4xl text-teal-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+        <h3 className="text-yellow-800 font-bold mb-2">⚠️ Configuración Requerida</h3>
+        <p className="text-yellow-700">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-lg font-bold text-gray-900">Gestión de Clientes</h2>
+          <p className="text-sm text-gray-500">Empresas y clientes que han trabajado con ustedes</p>
+        </div>
+        <button
+          onClick={() => { setEditingClient(null); setShowModal(true); }}
+          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded transition-colors"
+        >
+          <FaPlus className="w-4 h-4" />
+          Agregar Cliente
+        </button>
+      </div>
+
+      {clients.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <FaBuilding className="text-6xl text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-gray-700 mb-2">Sin clientes registrados</h3>
+          <p className="text-gray-500">Agrega los logos y nombres de tus clientes</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left px-6 py-3 text-xs font-bold text-gray-500 uppercase">Cliente</th>
+                <th className="text-left px-6 py-3 text-xs font-bold text-gray-500 uppercase">Website</th>
+                <th className="text-left px-6 py-3 text-xs font-bold text-gray-500 uppercase">Estado</th>
+                <th className="text-left px-6 py-3 text-xs font-bold text-gray-500 uppercase">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {clients.map((client) => (
+                <tr key={client.id} className={!client.is_visible ? 'opacity-60' : ''}>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      {client.logo_url ? (
+                        <img src={client.logo_url} alt={client.name} className="w-10 h-10 object-contain" />
+                      ) : (
+                        <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
+                          <FaBuilding className="text-gray-400" />
+                        </div>
+                      )}
+                      <span className="font-medium text-gray-900">{client.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    {client.website ? (
+                      <a href={client.website} target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline text-sm">
+                        {client.website}
+                      </a>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`text-xs font-bold px-2 py-1 rounded ${client.is_visible ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                      {client.is_visible ? 'Visible' : 'Oculto'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex gap-2">
+                      <button onClick={() => { setEditingClient(client); setShowModal(true); }} className="text-teal-600 hover:text-teal-700">
+                        <FaEdit />
+                      </button>
+                      <button onClick={() => handleToggleVisibility(client)} className={client.is_visible ? 'text-green-600' : 'text-gray-400'}>
+                        <FaEye />
+                      </button>
+                      <button onClick={() => handleDelete(client.id)} className="text-red-600 hover:text-red-700">
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showModal && (
+        <ModalClienteItem
+          client={editingClient}
+          onClose={() => setShowModal(false)}
+          onSuccess={() => { setShowModal(false); fetchClients(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Modal para agregar/editar cliente
+function ModalClienteItem({ client, onClose, onSuccess }: {
+  client: Client | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [name, setName] = useState(client?.name || '');
+  const [website, setWebsite] = useState(client?.website || '');
+  const [description, setDescription] = useState(client?.description || '');
+  const [logoUrl, setLogoUrl] = useState(client?.logo_url || '');
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.url) setLogoUrl(data.url);
+    } catch (err) {
+      alert('Error al subir logo');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!name) {
+      alert('El nombre es requerido');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const method = client ? 'PUT' : 'POST';
+      const body = client
+        ? { id: client.id, name, website, description, logo_url: logoUrl }
+        : { name, website, description, logo_url: logoUrl };
+
+      const res = await fetch('/api/clients', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) throw new Error('Error al guardar');
+      onSuccess();
+    } catch (err) {
+      alert('Error al guardar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">
+            {client ? 'Editar Cliente' : 'Nuevo Cliente'}
+          </h2>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900"
+              placeholder="Nombre de la empresa"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+            <input
+              type="url"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900"
+              placeholder="https://ejemplo.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900"
+              rows={2}
+              placeholder="Breve descripción..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Logo</label>
+            {logoUrl ? (
+              <div className="relative inline-block">
+                <img src={logoUrl} alt="Logo" className="h-20 object-contain" />
+                <button
+                  onClick={() => setLogoUrl('')}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full"
+                >
+                  <FaTimes className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <label className="block border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-teal-500">
+                <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                {uploading ? (
+                  <FaSpinner className="animate-spin text-xl text-gray-400 mx-auto" />
+                ) : (
+                  <>
+                    <FaUpload className="text-2xl text-gray-400 mx-auto mb-1" />
+                    <span className="text-sm text-gray-500">Subir logo</span>
+                  </>
+                )}
+              </label>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+          <button onClick={onClose} className="text-gray-600 hover:text-gray-800 font-medium px-4 py-2">
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving || uploading}
+            className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded disabled:opacity-50 flex items-center gap-2"
+          >
+            {saving && <FaSpinner className="animate-spin w-4 h-4" />}
+            Guardar
+          </button>
         </div>
       </div>
     </div>

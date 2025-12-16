@@ -77,3 +77,35 @@ CREATE INDEX ON answers (selected_option_id);
 -- You should change this in a real production environment.
 INSERT INTO app_users (name, email, password_hash, role) VALUES
 ('Admin', 'admin@gypconsultoria.com', '$2b$10$D9Zt4B4Z.g2Z7d.Pf7v.r.CrGk8r5V5Y.E3g3Q.i8R3g2s5Y.O1iO', 'admin');
+
+-- Contact messages table for storing contact form submissions
+CREATE TABLE contact_messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nombre VARCHAR(100) NOT NULL,
+    empresa VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    telefono VARCHAR(9) NOT NULL,
+    fecha_nacimiento DATE NOT NULL,
+    asunto VARCHAR(200) NOT NULL,
+    mensaje TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    is_read BOOLEAN NOT NULL DEFAULT false,
+    
+    -- Constraints for data validation
+    CONSTRAINT telefono_length CHECK (LENGTH(telefono) = 9),
+    CONSTRAINT telefono_numeric CHECK (telefono ~ '^\d{9}$'),
+    CONSTRAINT email_format CHECK (email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
+    CONSTRAINT fecha_nacimiento_range CHECK (
+        fecha_nacimiento >= '1900-01-01' 
+        AND fecha_nacimiento <= CURRENT_DATE
+    )
+);
+
+-- Indexes for contact_messages
+CREATE INDEX idx_contact_messages_email ON contact_messages (email);
+CREATE INDEX idx_contact_messages_created_at ON contact_messages (created_at DESC);
+CREATE INDEX idx_contact_messages_is_read ON contact_messages (is_read);
+
+-- Index for duplicate detection (email + asunto + recent time)
+CREATE INDEX idx_contact_messages_duplicate_check ON contact_messages (email, asunto, created_at);
+
