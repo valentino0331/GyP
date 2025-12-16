@@ -16,10 +16,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Si ya está autenticado como admin, redirigir a /admin
+  // Si ya está autenticado como admin o editor, redirigir a /admin
   useEffect(() => {
-    if (status === 'authenticated' && (session?.user as any)?.role === 'admin') {
-      router.replace('/admin');
+    if (status === 'authenticated') {
+      const role = (session?.user as any)?.role;
+      if (role === 'admin' || role === 'editor') {
+        router.replace('/admin');
+      }
     }
   }, [session, status, router]);
 

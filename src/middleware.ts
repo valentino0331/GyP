@@ -5,7 +5,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Rutas protegidas
-  const protectedRoutes = ['/admin', '/dashboard'];
+  const protectedRoutes = ['/admin'];
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
   if (isProtectedRoute) {
@@ -21,11 +21,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Para /admin, verificar que sea administrador
+    // Verificar que sea admin o editor para acceder a /admin
     if (pathname.startsWith('/admin')) {
-      if (token.role !== 'admin') {
-        // Redirigir a dashboard si no es admin
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+      const role = token.role as string;
+      if (role !== 'admin' && role !== 'editor') {
+        // Si no es admin ni editor, redirigir a home
+        return NextResponse.redirect(new URL('/', request.url));
       }
     }
   }
@@ -34,5 +35,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/dashboard/:path*'],
+  matcher: ['/admin/:path*'],
 };

@@ -1565,7 +1565,7 @@ function ContenidoContent() {
   );
 }
 
-// Modal para editar contenido
+// Modal para editar contenido - VERSIÓN AMIGABLE
 function ModalEditarContenido({ section, onClose, onSave, saving }: {
   section: SiteContent;
   onClose: () => void;
@@ -1585,96 +1585,195 @@ function ModalEditarContenido({ section, onClose, onSave, saving }: {
     });
   };
 
+  // Etiquetas amigables para los campos
+  const fieldLabels: { [key: string]: string } = {
+    title: '📝 Título',
+    subtitle: '📌 Subtítulo',
+    description: '📄 Descripción',
+    description2: '📄 Descripción adicional',
+    tag: '🏷️ Etiqueta',
+    cta: '🔘 Texto del botón',
+    image: '🖼️ URL de imagen',
+    heroSubtitle: '📌 Subtítulo del encabezado',
+    heroTitle: '📝 Título del encabezado',
+    heroDescription: '📄 Descripción del encabezado',
+    heroImage: '🖼️ Imagen del encabezado',
+    name: '🏢 Nombre',
+    shortName: '🏷️ Nombre corto',
+    tagline: '💬 Eslogan',
+    logo: '🖼️ Logo',
+    address: '📍 Dirección',
+    phone: '📞 Teléfono',
+    email: '✉️ Correo electrónico',
+    teamSectionTitle: '👥 Título sección equipo',
+    teamSectionSubtitle: '📌 Subtítulo sección equipo',
+  };
+
+  const getFieldLabel = (key: string) => fieldLabels[key] || key.replace(/_/g, ' ');
+
+  // Renderizar campos de forma amigable
+  const renderField = (key: string, value: any, path: string[] = []) => {
+    const fullPath = [...path, key];
+    const fieldId = fullPath.join('.');
+
+    if (typeof value === 'string') {
+      const isLongText = value.length > 100 || key.includes('description') || key.includes('Description');
+      const isUrl = key.toLowerCase().includes('url') || key.toLowerCase().includes('image') || key === 'logo' || key === 'href';
+      
+      return (
+        <div key={fieldId} className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {getFieldLabel(key)}
+          </label>
+          {isLongText ? (
+            <textarea
+              value={value}
+              onChange={(e) => {
+                if (path.length === 0) {
+                  handleContentChange(key, e.target.value);
+                }
+              }}
+              rows={3}
+              placeholder={`Escribe ${key.replace(/_/g, ' ')}...`}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            />
+          ) : (
+            <input
+              type={isUrl ? 'url' : 'text'}
+              value={value}
+              onChange={(e) => {
+                if (path.length === 0) {
+                  handleContentChange(key, e.target.value);
+                }
+              }}
+              placeholder={isUrl ? 'https://...' : `Escribe ${key.replace(/_/g, ' ')}...`}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            />
+          )}
+        </div>
+      );
+    }
+
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      return (
+        <div key={fieldId} className="mb-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <h4 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
+            📁 {getFieldLabel(key)}
+          </h4>
+          <div className="space-y-3">
+            {Object.entries(value).map(([subKey, subValue]) => (
+              <div key={`${fieldId}.${subKey}`}>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  {getFieldLabel(subKey)}
+                </label>
+                <input
+                  type="text"
+                  value={String(subValue)}
+                  onChange={(e) => {
+                    const newObj = { ...value, [subKey]: e.target.value };
+                    handleContentChange(key, newObj);
+                  }}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (Array.isArray(value)) {
+      return (
+        <div key={fieldId} className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-medium text-gray-800 flex items-center gap-2">
+              📋 {getFieldLabel(key)} ({value.length} elementos)
+            </h4>
+          </div>
+          <div className="space-y-3">
+            {value.map((item, index) => (
+              <div key={index} className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-blue-800">Elemento {index + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newArray = value.filter((_, i) => i !== index);
+                      handleContentChange(key, newArray);
+                    }}
+                    className="text-red-500 hover:text-red-700 text-xs"
+                  >
+                    ❌ Eliminar
+                  </button>
+                </div>
+                {typeof item === 'object' ? (
+                  <div className="grid gap-2">
+                    {Object.entries(item).map(([itemKey, itemValue]) => (
+                      <div key={itemKey}>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          {getFieldLabel(itemKey)}
+                        </label>
+                        <input
+                          type="text"
+                          value={String(itemValue)}
+                          onChange={(e) => {
+                            const newArray = [...value];
+                            newArray[index] = { ...item, [itemKey]: e.target.value };
+                            handleContentChange(key, newArray);
+                          }}
+                          className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={String(item)}
+                    onChange={(e) => {
+                      const newArray = [...value];
+                      newArray[index] = e.target.value;
+                      handleContentChange(key, newArray);
+                    }}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900"
+                  />
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                const newItem = value.length > 0 && typeof value[0] === 'object' 
+                  ? Object.fromEntries(Object.keys(value[0]).map(k => [k, '']))
+                  : '';
+                handleContentChange(key, [...value, newItem]);
+              }}
+              className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-teal-500 hover:text-teal-600 transition-colors"
+            >
+              ➕ Agregar elemento
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   const renderContentEditor = () => {
     const content = editedSection.content;
     
-    // Renderizar campos según el tipo de contenido
     if (typeof content !== 'object') {
       return (
-        <textarea
-          value={JSON.stringify(content, null, 2)}
-          onChange={(e) => {
-            try {
-              const parsed = JSON.parse(e.target.value);
-              setEditedSection({ ...editedSection, content: parsed });
-              setJsonError('');
-            } catch {
-              setJsonError('JSON inválido');
-            }
-          }}
-          className="w-full h-64 border border-gray-300 rounded px-3 py-2 font-mono text-sm"
-        />
+        <div className="bg-yellow-50 p-4 rounded-lg">
+          <p className="text-yellow-700">Contenido no editable visualmente</p>
+        </div>
       );
     }
 
     return (
-      <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-        {Object.entries(content).map(([key, value]) => (
-          <div key={key} className="border-b border-gray-100 pb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
-              {key.replace(/_/g, ' ')}
-            </label>
-            {typeof value === 'string' ? (
-              value.length > 100 ? (
-                <textarea
-                  value={value}
-                  onChange={(e) => handleContentChange(key, e.target.value)}
-                  rows={4}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:ring-2 focus:ring-teal-500"
-                />
-              ) : (
-                <input
-                  type="text"
-                  value={value}
-                  onChange={(e) => handleContentChange(key, e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:ring-2 focus:ring-teal-500"
-                />
-              )
-            ) : Array.isArray(value) ? (
-              <div className="bg-gray-50 rounded p-3">
-                <p className="text-xs text-gray-500 mb-2">Array con {value.length} elementos</p>
-                <textarea
-                  value={JSON.stringify(value, null, 2)}
-                  onChange={(e) => {
-                    try {
-                      const parsed = JSON.parse(e.target.value);
-                      handleContentChange(key, parsed);
-                      setJsonError('');
-                    } catch {
-                      setJsonError(`Error en ${key}: JSON inválido`);
-                    }
-                  }}
-                  rows={Math.min(10, value.length * 3 + 2)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-xs text-gray-900"
-                />
-              </div>
-            ) : typeof value === 'object' ? (
-              <div className="bg-gray-50 rounded p-3">
-                <textarea
-                  value={JSON.stringify(value, null, 2)}
-                  onChange={(e) => {
-                    try {
-                      const parsed = JSON.parse(e.target.value);
-                      handleContentChange(key, parsed);
-                      setJsonError('');
-                    } catch {
-                      setJsonError(`Error en ${key}: JSON inválido`);
-                    }
-                  }}
-                  rows={6}
-                  className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-xs text-gray-900"
-                />
-              </div>
-            ) : (
-              <input
-                type="text"
-                value={String(value)}
-                onChange={(e) => handleContentChange(key, e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:ring-2 focus:ring-teal-500"
-              />
-            )}
-          </div>
-        ))}
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+        {Object.entries(content).map(([key, value]) => renderField(key, value))}
       </div>
     );
   };
