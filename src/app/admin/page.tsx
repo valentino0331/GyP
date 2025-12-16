@@ -2459,6 +2459,8 @@ function ServiciosContent() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({ title: '', description: '', icon: 'chart' });
 
   useEffect(() => {
     fetchServices();
@@ -2467,11 +2469,12 @@ function ServiciosContent() {
   const fetchServices = async () => {
     try {
       const res = await fetch('/api/services');
-      if (!res.ok) throw new Error('Error');
-      const data = await res.json();
-      setServices(data);
+      if (res.ok) {
+        const data = await res.json();
+        setServices(data);
+      }
     } catch {
-      // Tabla no existe aún
+      // Error silencioso
     } finally {
       setLoading(false);
     }
@@ -2487,6 +2490,58 @@ function ServiciosContent() {
     { value: 'lightbulb', label: '💡 Idea', icon: '💡' },
     { value: 'handshake', label: '🤝 Alianza', icon: '🤝' },
   ];
+
+  const openModal = (service: Service | null) => {
+    if (service) {
+      setFormData({ title: service.title, description: service.description, icon: service.icon || 'chart' });
+      setEditingService(service);
+    } else {
+      setFormData({ title: '', description: '', icon: 'chart' });
+      setEditingService(null);
+    }
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.title || !formData.description) {
+      alert('Completa todos los campos');
+      return;
+    }
+    setSaving(true);
+    try {
+      const method = editingService ? 'PUT' : 'POST';
+      const body = editingService 
+        ? { ...formData, id: editingService.id }
+        : formData;
+      
+      const res = await fetch('/api/services', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (res.ok) {
+        await fetchServices();
+        setShowModal(false);
+      } else {
+        alert('Error al guardar');
+      }
+    } catch {
+      alert('Error de conexión');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Eliminar este servicio?')) return;
+    try {
+      await fetch(`/api/services?id=${id}`, { method: 'DELETE' });
+      await fetchServices();
+    } catch {
+      alert('Error al eliminar');
+    }
+  };
 
   if (loading) {
     return (
@@ -2504,7 +2559,7 @@ function ServiciosContent() {
           <p className="text-sm text-gray-500">Edita los servicios que ofrece tu empresa</p>
         </div>
         <button
-          onClick={() => { setEditingService(null); setShowModal(true); }}
+          onClick={() => openModal(null)}
           className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2"
         >
           <FaPlus className="w-4 h-4" />
@@ -2518,7 +2573,7 @@ function ServiciosContent() {
           <h3 className="text-lg font-bold text-gray-700 mb-2">Sin servicios configurados</h3>
           <p className="text-gray-500 mb-4">Los servicios se mostrarán en la página de Servicios</p>
           <button
-            onClick={() => { setEditingService(null); setShowModal(true); }}
+            onClick={() => openModal(null)}
             className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded inline-flex items-center gap-2"
           >
             <FaPlus className="w-4 h-4" />
@@ -2538,16 +2593,86 @@ function ServiciosContent() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => { setEditingService(service); setShowModal(true); }}
-                    className="text-teal-600 hover:text-teal-800"
-                  >
+                  <button onClick={() => openModal(service)} className="text-teal-600 hover:text-teal-800">
                     <FaEdit />
+                  </button>
+                  <button onClick={() => handleDelete(service.id)} className="text-red-400 hover:text-red-600">
+                    <FaTrash />
                   </button>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Modal para crear/editar servicio */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900">
+                {editingService ? '✏️ Editar Servicio' : '➕ Nuevo Servicio'}
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500"
+                  placeholder="Ej: Investigación de Mercados"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500"
+                  placeholder="Describe el servicio..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Icono</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {iconOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, icon: opt.value })}
+                      className={`p-3 text-2xl rounded-lg border-2 transition-colors ${
+                        formData.icon === opt.value 
+                          ? 'border-teal-500 bg-teal-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      {opt.icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-600 hover:text-gray-800 font-medium px-4 py-2"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded disabled:opacity-50 flex items-center gap-2"
+              >
+                {saving && <FaSpinner className="animate-spin w-4 h-4" />}
+                Guardar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -2562,6 +2687,8 @@ function EquipoContent() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({ name: '', position: '', bio: '' });
 
   useEffect(() => {
     fetchMembers();
@@ -2570,13 +2697,66 @@ function EquipoContent() {
   const fetchMembers = async () => {
     try {
       const res = await fetch('/api/team');
-      if (!res.ok) throw new Error('Error');
-      const data = await res.json();
-      setMembers(data);
+      if (res.ok) {
+        const data = await res.json();
+        setMembers(data);
+      }
     } catch {
-      // Tabla no existe aún
+      // Error silencioso
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openModal = (member: TeamMember | null) => {
+    if (member) {
+      setFormData({ name: member.name, position: member.position, bio: member.bio || '' });
+      setEditingMember(member);
+    } else {
+      setFormData({ name: '', position: '', bio: '' });
+      setEditingMember(null);
+    }
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name || !formData.position) {
+      alert('Nombre y cargo son requeridos');
+      return;
+    }
+    setSaving(true);
+    try {
+      const method = editingMember ? 'PUT' : 'POST';
+      const body = editingMember 
+        ? { ...formData, id: editingMember.id }
+        : formData;
+      
+      const res = await fetch('/api/team', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (res.ok) {
+        await fetchMembers();
+        setShowModal(false);
+      } else {
+        alert('Error al guardar');
+      }
+    } catch {
+      alert('Error de conexión');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Eliminar este miembro?')) return;
+    try {
+      await fetch(`/api/team?id=${id}`, { method: 'DELETE' });
+      await fetchMembers();
+    } catch {
+      alert('Error al eliminar');
     }
   };
 
@@ -2596,7 +2776,7 @@ function EquipoContent() {
           <p className="text-sm text-gray-500">Administra los miembros del equipo que se muestran en el sitio</p>
         </div>
         <button
-          onClick={() => { setEditingMember(null); setShowModal(true); }}
+          onClick={() => openModal(null)}
           className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2"
         >
           <FaPlus className="w-4 h-4" />
@@ -2610,7 +2790,7 @@ function EquipoContent() {
           <h3 className="text-lg font-bold text-gray-700 mb-2">Sin miembros del equipo</h3>
           <p className="text-gray-500 mb-4">Agrega los miembros de tu equipo para mostrarlos en la página</p>
           <button
-            onClick={() => { setEditingMember(null); setShowModal(true); }}
+            onClick={() => openModal(null)}
             className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded inline-flex items-center gap-2"
           >
             <FaPlus className="w-4 h-4" />
@@ -2632,16 +2812,78 @@ function EquipoContent() {
               </div>
               <h3 className="font-bold text-gray-900">{member.name}</h3>
               <p className="text-sm text-teal-600">{member.position}</p>
+              <p className="text-xs text-gray-500 mt-1 line-clamp-2">{member.bio}</p>
               <div className="mt-3 flex justify-center gap-2">
-                <button
-                  onClick={() => { setEditingMember(member); setShowModal(true); }}
-                  className="text-teal-600 hover:text-teal-800"
-                >
+                <button onClick={() => openModal(member)} className="text-teal-600 hover:text-teal-800">
                   <FaEdit />
+                </button>
+                <button onClick={() => handleDelete(member.id)} className="text-red-400 hover:text-red-600">
+                  <FaTrash />
                 </button>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Modal para crear/editar miembro */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900">
+                {editingMember ? '✏️ Editar Miembro' : '➕ Nuevo Miembro del Equipo'}
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500"
+                  placeholder="Ej: Juan Pérez"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cargo *</label>
+                <input
+                  type="text"
+                  value={formData.position}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500"
+                  placeholder="Ej: Director de Investigación"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Biografía</label>
+                <textarea
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  rows={3}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500"
+                  placeholder="Breve descripción del miembro..."
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-600 hover:text-gray-800 font-medium px-4 py-2"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded disabled:opacity-50 flex items-center gap-2"
+              >
+                {saving && <FaSpinner className="animate-spin w-4 h-4" />}
+                Guardar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
