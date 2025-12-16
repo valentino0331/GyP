@@ -33,7 +33,7 @@ export default function Footer() {
               </div>
               <div>
                 <span className="text-lg font-bold">GyP</span>
-                <span className="text-sm text-gray-400 block -mt-1">Consultoría</span>
+                <span className="text-sm text-gray-400 block -mt-1">Consultoría SAC</span>
               </div>
             </div>
             <p className="text-gray-400 text-sm mb-4">
@@ -100,7 +100,7 @@ export default function Footer() {
       <div className="border-t border-gray-800">
         <div className="container mx-auto px-6 py-4">
           <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
-            <p>© {new Date().getFullYear()} GyP Consultoría. Todos los derechos reservados.</p>
+            <p>© {new Date().getFullYear()} GyP Consultoría SAC. Todos los derechos reservados.</p>
             <div className="flex space-x-4 mt-2 md:mt-0">
               <Link href="#" className="hover:text-white transition-colors">Términos</Link>
               <Link href="#" className="hover:text-white transition-colors">Privacidad</Link>
