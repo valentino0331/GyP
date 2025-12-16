@@ -1,7 +1,7 @@
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { User as NextAuthUser } from "next-auth";
 
 // Extender el tipo de usuario de NextAuth para incluir nuestro rol

@@ -1,6 +1,6 @@
 // Script para crear el usuario admin en la base de datos
 const { Pool } = require('pg');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const pool = new Pool({
   connectionString: 'postgresql://postgres:1234@localhost:5432/encuestas'
