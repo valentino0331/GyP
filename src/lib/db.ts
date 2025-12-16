@@ -7,6 +7,19 @@ const connectionString = process.env.NETLIFY_DATABASE_URL || process.env.DATABAS
 console.log('DATABASE_URL exists:', !!connectionString);
 console.log('DATABASE_URL length:', connectionString?.length || 0);
 
+// Mostrar las primeras partes de la URL para debug (sin mostrar password)
+if (connectionString) {
+  try {
+    const url = new URL(connectionString);
+    console.log('DB Host:', url.hostname);
+    console.log('DB Port:', url.port || '5432');
+    console.log('DB Name:', url.pathname);
+  } catch (e) {
+    console.log('Error parsing URL:', e);
+    console.log('URL starts with:', connectionString.substring(0, 30));
+  }
+}
+
 let pool: Pool;
 
 if (connectionString) {
