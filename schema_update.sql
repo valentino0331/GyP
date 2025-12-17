@@ -204,6 +204,34 @@ INSERT INTO site_content (section_key, section_name, content) VALUES
     "heroImage": "/team-meeting.jpg",
     "teamSectionTitle": "Nuestro Equipo",
     "teamSectionSubtitle": "Profesionales Experimentados"
+}'::jsonb),
+
+('servicios_page', 'Página Servicios', '{
+    "heroSubtitle": "GyP Consultoría",
+    "heroTitle": "Nuestros Servicios",
+    "heroDescription": "Soluciones integrales de investigación para entender mercados, consumidores y la opinión pública.",
+    "heroImage": "/data-analysis.jpg",
+    "servicesTag": "Nuestros Servicios",
+    "servicesTitle": "Soluciones de Investigación",
+    "servicesDescription": "Proporcionamos información confiable para una verdadera comprensión de la sociedad, los mercados y las personas.",
+    "areasTag": "Áreas de Especialización",
+    "areasTitle": "Conocimiento en diversos sectores",
+    "areasDescription": "Nuestro equipo cuenta con experiencia en múltiples industrias y sectores para ofrecer insights relevantes y accionables.",
+    "areas": ["Consumidores y Marcas", "Ciudadanos y Opinión Pública", "Clientes y Colaboradores", "Sector Público", "Salud y Bienestar", "Medios y Comunicación"],
+    "ctaTitle": "¿Necesitas un estudio personalizado?",
+    "ctaDescription": "Contáctanos y diseñaremos la metodología perfecta para tu proyecto.",
+    "ctaButton": "SOLICITAR COTIZACIÓN"
+}'::jsonb),
+
+('contacto_page', 'Página Contacto', '{
+    "heroSubtitle": "Hablemos",
+    "heroTitle": "Contáctanos",
+    "heroDescription": "Estamos listos para ayudarte a obtener la información que necesitas.",
+    "heroImage": "/survey-people.jpg",
+    "formTitle": "Envíenos un mensaje",
+    "phone": "+51 956 478 233",
+    "email": "gypsac@hotmail.com",
+    "address": "Lima, Perú"
 }'::jsonb)
 
 ON CONFLICT (section_key) DO UPDATE SET 
