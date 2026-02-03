@@ -100,7 +100,16 @@ interface ContactMessage {
   is_read: boolean;
 }
 
-type Tab = 'dashboard' | 'encuestas' | 'contenido' | 'galeria' | 'clientes' | 'servicios' | 'equipo' | 'mensajes' | 'usuarios' | 'reportes' | 'configuracion';
+interface DownloadableFile {
+  id: string;
+  display_name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number;
+  created_at: string;
+}
+
+type Tab = 'dashboard' | 'encuestas' | 'contenido' | 'galeria' | 'clientes' | 'servicios' | 'equipo' | 'mensajes' | 'usuarios' | 'reportes' | 'configuracion' | 'archivos';
 
 export default function AdminPage() {
   const { data: session, status } = useSession();
@@ -156,6 +165,7 @@ export default function AdminPage() {
     { id: 'dashboard' as Tab, label: 'Dashboard', icon: FaChartBar, adminOnly: false },
     { id: 'encuestas' as Tab, label: 'Encuestas', icon: FaPoll, adminOnly: false },
     { id: 'contenido' as Tab, label: 'Contenido Web', icon: FaGlobe, adminOnly: true },
+    { id: 'archivos' as Tab, label: 'Archivos Descargables', icon: FaDownload, adminOnly: true },
     { id: 'servicios' as Tab, label: 'Servicios', icon: FaCog, adminOnly: true },
     { id: 'galeria' as Tab, label: 'Galería', icon: FaImages, adminOnly: true },
     { id: 'clientes' as Tab, label: 'Clientes', icon: FaBuilding, adminOnly: true },
@@ -262,6 +272,7 @@ export default function AdminPage() {
           {activeTab === 'dashboard' && <DashboardContent key={refreshKey} />}
           {activeTab === 'encuestas' && <EncuestasContent key={refreshKey} onCrear={() => setModalCrear(true)} />}
           {activeTab === 'contenido' && isAdmin && <ContenidoContent />}
+          {activeTab === 'archivos' && isAdmin && <ArchivosDescargablesContent />}
           {activeTab === 'servicios' && isAdmin && <ServiciosContent />}
           {activeTab === 'galeria' && isAdmin && <GaleriaContent />}
           {activeTab === 'clientes' && isAdmin && <ClientesContent />}
@@ -3060,6 +3071,244 @@ function MensajesContent() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function ArchivosDescargablesContent() {
+  const [files, setFiles] = useState<DownloadableFile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [displayName, setDisplayName] = useState('');
+  const [uploadError, setUploadError] = useState('');
+
+  useEffect(() => {
+    fetchFiles();
+  }, []);
+
+  const fetchFiles = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/downloadable-files');
+      if (!res.ok) throw new Error('Error al cargar los archivos');
+      const data = await res.json();
+      setFiles(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      // Sugerir un nombre para mostrar basado en el nombre del archivo
+      const nameWithoutExtension = file.name.split('.').slice(0, -1).join('.');
+      setDisplayName(nameWithoutExtension.replace(/_/g, ' ').replace(/-/g, ' '));
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile || !displayName.trim()) {
+      setUploadError('Por favor, selecciona un archivo y asígnale un nombre para mostrar.');
+      return;
+    }
+
+    setUploading(true);
+    setUploadError('');
+
+    try {
+      // 1. Subir el archivo
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', selectedFile);
+      
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+
+      if (!uploadRes.ok) {
+        const errorData = await uploadRes.json();
+        throw new Error(errorData.error || 'Error en la subida del archivo');
+      }
+      
+      const uploadData = await uploadRes.json();
+
+      // 2. Guardar el registro en la base de datos
+      const recordRes = await fetch('/api/downloadable-files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          displayName: displayName.trim(),
+          fileName: uploadData.fileName,
+          originalName: selectedFile.name,
+          filePath: uploadData.url,
+          fileType: selectedFile.type,
+          fileSize: selectedFile.size,
+        }),
+      });
+
+      if (!recordRes.ok) {
+        const errorData = await recordRes.json();
+        throw new Error(errorData.error || 'Error al guardar el registro del archivo');
+      }
+      
+      // Limpiar formulario y recargar lista
+      setSelectedFile(null);
+      setDisplayName('');
+      await fetchFiles();
+
+    } catch (err: any) {
+      setUploadError(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Estás seguro de eliminar este archivo? Esta acción no se puede deshacer.')) return;
+
+    try {
+      const res = await fetch(`/api/downloadable-files?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Error al eliminar el archivo');
+      }
+      setFiles(files.filter(f => f.id !== id));
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('es-PE', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold text-gray-900">Archivos Descargables</h2>
+        <p className="text-sm text-gray-500">Sube y administra archivos para que los usuarios los descarguen.</p>
+      </div>
+
+      {/* Formulario de subida */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-md font-bold text-gray-900 mb-4">Subir Nuevo Archivo</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre para mostrar *</label>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Ej: Reporte de mercado Q1 2025"
+              className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Archivo *</label>
+            <input
+              type="file"
+              onChange={handleFileChange}
+              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+            />
+            {selectedFile && <p className="text-xs text-gray-500 mt-1">{selectedFile.name} ({formatFileSize(selectedFile.size)})</p>}
+          </div>
+          {uploadError && <p className="text-sm text-red-600 bg-red-50 p-3 rounded">{uploadError}</p>}
+          <div className="text-right">
+            <button
+              onClick={handleUpload}
+              disabled={uploading}
+              className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded disabled:opacity-50 flex items-center gap-2"
+            >
+              {uploading ? <FaSpinner className="animate-spin w-4 h-4" /> : <FaUpload className="w-4 h-4" />}
+              Subir Archivo
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Lista de archivos */}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <FaSpinner className="animate-spin text-4xl text-teal-600" />
+          </div>
+        ) : error ? (
+          <div className="p-12 text-center">
+            <p className="text-red-600">{error}</p>
+          </div>
+        ) : files.length === 0 ? (
+          <div className="p-12 text-center text-gray-500">
+            <FaDownload className="text-5xl text-gray-300 mx-auto mb-4" />
+            No hay archivos para mostrar.
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left px-6 py-3 text-xs font-bold text-gray-500 uppercase">Nombre</th>
+                <th className="text-left px-6 py-3 text-xs font-bold text-gray-500 uppercase">Tamaño</th>
+                <th className="text-left px-6 py-3 text-xs font-bold text-gray-500 uppercase">Fecha de subida</th>
+                <th className="text-left px-6 py-3 text-xs font-bold text-gray-500 uppercase">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {files.map((file) => (
+                <tr key={file.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <a href={file.file_path} target="_blank" rel="noopener noreferrer" className="font-medium text-teal-600 hover:underline">
+                      {file.display_name}
+                    </a>
+                    <p className="text-xs text-gray-500">{file.file_type}</p>
+                  </td>
+                  <td className="px-6 py-4 text-gray-600">{formatFileSize(file.file_size)}</td>
+                  <td className="px-6 py-4 text-gray-600">{formatDate(file.created_at)}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <a 
+                        href={file.file_path} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="p-2 text-gray-500 hover:text-teal-600" 
+                        title="Descargar"
+                      >
+                        <FaDownload />
+                      </a>
+                      <button
+                        onClick={() => handleDelete(file.id)}
+                        className="p-2 text-gray-500 hover:text-red-600"
+                        title="Eliminar"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
