@@ -99,43 +99,49 @@ function QuickStats({ content }: { content: any }) {
 }
 
 // Sección de descargas
-function DownloadSection() {
-  const files = [
-    { name: '1765646875210-lhikn4.jpg', url: '/uploads/1765646875210-lhikn4.jpg', type: 'image' },
-    { name: '1765646890325-il6w10.jpg', url: '/uploads/1765646890325-il6w10.jpg', type: 'image' }
-    // Aquí se agregarán más archivos dinámicamente si se implementa backend
-  ];
+function DownloadSection({ files }: { files: any[] }) {
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith('image/')) return '🖼️';
+    if (fileType.includes('pdf')) return '📄';
+    if (fileType.includes('sheet') || fileType.includes('excel')) return '📊';
+    if (fileType.includes('document') || fileType.includes('word')) return '📝';
+    return '📁';
+  };
+
   return (
-    <section className="bg-gradient-to-br from-teal-50 to-teal-100 py-14 px-4">
-      <div className="container mx-auto max-w-2xl rounded-xl shadow-lg bg-white p-8">
-        <h2 className="text-3xl font-extrabold mb-6 text-teal-700 flex items-center gap-2">
-          <svg className="w-8 h-8 text-teal-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-8m0 8l-4-4m4 4l4-4" /></svg>
-          Descarga de archivos
-        </h2>
-        <ul className="divide-y divide-teal-100">
-          {files.length === 0 ? (
-            <li className="text-gray-500 py-6 text-center">No hay archivos disponibles.</li>
-          ) : (
-            files.map(file => (
-              <li key={file.name} className="flex items-center justify-between py-4">
-                <div className="flex items-center gap-4">
-                  {file.type === 'image' ? (
-                    <img src={file.url} alt={file.name} className="w-12 h-12 object-cover rounded shadow" />
-                  ) : (
-                    <div className="w-12 h-12 flex items-center justify-center bg-teal-100 rounded">
-                      <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-8m0 8l-4-4m4 4l4-4" /></svg>
+    <section className="bg-gradient-to-br from-gray-50 to-gray-100 py-16 px-4">
+      <div className="container mx-auto max-w-3xl">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Archivos Descargables</h2>
+          <p className="text-gray-600 mt-2">Documentos y reportes de interés.</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <ul className="divide-y divide-gray-200">
+            {files.length === 0 ? (
+              <li className="text-gray-500 py-8 text-center">No hay archivos disponibles en este momento.</li>
+            ) : (
+              files.map(file => (
+                <li key={file.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-4 overflow-hidden">
+                    <div className="text-2xl">{getFileIcon(file.file_type)}</div>
+                    <div>
+                      <p className="font-medium text-gray-800 truncate">{file.display_name}</p>
+                      <p className="text-xs text-gray-500">{file.file_type}</p>
                     </div>
-                  )}
-                  <span className="font-medium text-gray-800 truncate max-w-[140px]">{file.name}</span>
-                </div>
-                <a href={file.url} download className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold px-4 py-2 rounded transition">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M3 16a2 2 0 002 2h10a2 2 0 002-2v-4a1 1 0 10-2 0v4H5v-4a1 1 0 10-2 0v4zm7-14a1 1 0 00-1 1v8.586l-2.293-2.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l4-4a1 1 0 10-1.414-1.414L11 11.586V3a1 1 0 00-1-1z" /></svg>
-                  Descargar
-                </a>
-              </li>
-            ))
-          )}
-        </ul>
+                  </div>
+                  <a 
+                    href={file.file_path} 
+                    download 
+                    className="flex-shrink-0 inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold px-4 py-2 rounded-lg transition"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M3 16a2 2 0 002 2h10a2 2 0 002-2v-4a1 1 0 10-2 0v4H5v-4a1 1 0 10-2 0v4zm7-14a1 1 0 00-1 1v8.586l-2.293-2.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l4-4a1 1 0 10-1.414-1.414L11 11.586V3a1 1 0 00-1-1z" /></svg>
+                    <span className="hidden sm:inline">Descargar</span>
+                  </a>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
       </div>
     </section>
   );
@@ -320,14 +326,25 @@ function QuickLinks({ content }: { content: any }) {
   );
 }
 
+async function getDownloadableFiles() {
+  try {
+    const result = await db.query('SELECT id, display_name, file_path, file_type, file_size FROM downloadable_files ORDER BY created_at DESC LIMIT 5');
+    return result.rows;
+  } catch (error) {
+    console.error('Error fetching downloadable files for main page:', error);
+    return []; // Devolver un array vacío en caso de error
+  }
+}
+
 export default async function Page() {
   const content = await getContent();
+  const downloadableFiles = await getDownloadableFiles();
   return (
     <main className="bg-white text-gray-800">
       <Header />
       <HomeHero content={content} />
       <QuickStats content={content} />
-      <DownloadSection />
+      <DownloadSection files={downloadableFiles} />
       <ServicesPreview content={content} />
       <StudiesPreview content={content} />
       <ParticipatesCTA content={content} />
