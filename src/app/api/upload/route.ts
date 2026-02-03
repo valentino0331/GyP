@@ -16,10 +16,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar tipo de archivo
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/csv',
+      'text/plain'
+    ];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Tipo de archivo no permitido. Solo se aceptan imágenes (JPG, PNG, GIF, WebP)' },
+        { error: 'Tipo de archivo no permitido. Solo se aceptan imágenes, PDF, Excel, Word, CSV y TXT.' },
         { status: 400 }
       );
     }
