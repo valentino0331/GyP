@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
-import { existsSync } from 'fs';
+import { v2 as cloudinary } from 'cloudinary';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,39 +35,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validar tamaño (máximo 5MB)
-    const maxSize = 5 * 1024 * 1024;
+    // Validar tamaño (máximo 10MB para Cloudinary)
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'El archivo es demasiado grande. Máximo 5MB' },
+        { error: 'El archivo es demasiado grande. Máximo 10MB' },
         { status: 400 }
       );
     }
 
-    // Crear directorio de uploads si no existe
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-
-    // Generar nombre único para el archivo
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 8);
-    const extension = file.name.split('.').pop();
-    const fileName = `${timestamp}-${randomString}.${extension}`;
-
-    // Guardar el archivo
+    // Convertir el archivo a un buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const filePath = path.join(uploadsDir, fileName);
-    await writeFile(filePath, buffer);
 
-    // Retornar la URL pública
-    const url = `/uploads/${fileName}`;
+    // Subir el archivo a Cloudinary
+    const uploadResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+            { resource_type: 'auto' }, // Permite a Cloudinary detectar el tipo de archivo
+            (error, result) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(result);
+                }
+            }
+        );
+        uploadStream.end(buffer);
+    });
 
-    return NextResponse.json({ url, fileName }, { status: 201 });
+    // @ts-ignore
+    const { secure_url, original_filename } = uploadResult;
+
+    return NextResponse.json({ url: secure_url, fileName: original_filename }, { status: 201 });
+
   } catch (error) {
-    console.error('Error uploading file:', error);
+    console.error('Error uploading file to Cloudinary:', error);
     return NextResponse.json(
       { error: 'Error al subir el archivo' },
       { status: 500 }
