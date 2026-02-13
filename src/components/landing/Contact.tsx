@@ -278,7 +278,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900">Ubicación</p>
-                  <p className="text-gray-600">Lima, Perú</p>
+                  <p className="text-gray-600">Piura, Perú</p>
                 </div>
               </div>
             </div>
