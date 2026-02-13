@@ -88,7 +88,7 @@ export default function Footer() {
           <div>
             <h4 className="font-bold text-sm uppercase tracking-wider mb-4">Contacto</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li>Lima, Perú</li>
+              <li>Piura, Perú</li>
               <li>+51 956 478 233</li>
               <li>gypsac@hotmail.com</li>
             </ul>
