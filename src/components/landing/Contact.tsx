@@ -258,7 +258,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900">Teléfono</p>
-                  <p className="text-gray-600">+51 956 478 233</p>
+                  <p className="text-gray-600">+51 956 478 244</p>
                 </div>
               </div>
 
